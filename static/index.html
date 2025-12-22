@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thames Water Usage Dashboard</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Thames Water Usage Dashboard</h1>
+            <div class="status-bar">
+                <span id="last-sync">Last sync: Loading...</span>
+                <span id="health-status" class="status-badge">Checking...</span>
+            </div>
+        </header>
+
+        <section class="summary-cards">
+            <div class="card">
+                <h3>Latest Day</h3>
+                <div class="value" id="today-usage">--</div>
+                <div class="unit">litres</div>
+            </div>
+            <div class="card">
+                <h3>7-Day Average</h3>
+                <div class="value" id="avg-usage">--</div>
+                <div class="unit">litres/day</div>
+            </div>
+            <div class="card">
+                <h3>This Month</h3>
+                <div class="value" id="month-usage">--</div>
+                <div class="unit">litres</div>
+            </div>
+            <div class="card alert-card" id="alert-card">
+                <h3>Active Alerts</h3>
+                <div class="value" id="alert-count">0</div>
+                <div class="unit">alerts</div>
+            </div>
+        </section>
+
+        <section class="summary-cards cost-cards">
+            <div class="card cost-card">
+                <h3>Daily Cost (Avg)</h3>
+                <div class="value" id="daily-cost">--</div>
+                <div class="unit">per day</div>
+            </div>
+            <div class="card cost-card">
+                <h3>Month to Date</h3>
+                <div class="value" id="month-cost">--</div>
+                <div class="unit">this month</div>
+            </div>
+            <div class="card cost-card">
+                <h3>Projected Monthly</h3>
+                <div class="value" id="projected-cost">--</div>
+                <div class="unit">full month est.</div>
+            </div>
+            <div class="card cost-card">
+                <h3>Annual Estimate</h3>
+                <div class="value" id="annual-cost">--</div>
+                <div class="unit">per year</div>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <div class="chart-header">
+                <h2>Daily Usage (Last 30 Days)</h2>
+                <div class="chart-controls">
+                    <button class="btn active" data-range="30">30 Days</button>
+                    <button class="btn" data-range="90">90 Days</button>
+                    <button class="btn" data-range="365">1 Year</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="daily-chart"></canvas>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <div class="chart-header">
+                <h2>Hourly Breakdown</h2>
+                <input type="date" id="hourly-date" class="date-picker">
+            </div>
+            <div class="chart-container">
+                <canvas id="hourly-chart"></canvas>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <div class="chart-header">
+                <h2>Monthly Comparison</h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="monthly-chart"></canvas>
+            </div>
+        </section>
+
+        <section class="alerts-section">
+            <div class="chart-header">
+                <h2>Recent Alerts</h2>
+            </div>
+            <div id="alerts-list" class="alerts-list">
+                <p class="loading">Loading alerts...</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>Thames Water Monitoring Service v1.0.0</p>
+            <p>Data refreshes every 5 minutes</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
