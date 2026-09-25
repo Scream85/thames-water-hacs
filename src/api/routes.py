@@ -1,21 +1,23 @@
 """API route definitions."""
 
+import time
 from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from src.api.middleware import verify_api_key
+from src.api.middleware import verify_api_key, verify_ingest_key
 from src.api.schemas import (
     AcknowledgeAlertResponse,
     AlertItem,
     AlertsResponse,
     DailyUsageItem,
     DailyUsageResponse,
-    ErrorResponse,
     HealthResponse,
     HourlyUsageItem,
     HourlyUsageResponse,
+    IngestRequest,
+    IngestResponse,
     MonthlyUsageItem,
     MonthlyUsageResponse,
     PaginationInfo,
@@ -25,8 +27,10 @@ from src.api.schemas import (
     UsageSummaryResponse,
 )
 from src.database.connection import get_database
+from src.database.models import DailyUsage, HourlyUsage, SyncLog
 from src.database.queries import (
     acknowledge_alert,
+    create_sync_log,
     get_alerts,
     get_daily_usage,
     get_daily_usage_count,
@@ -36,12 +40,58 @@ from src.database.queries import (
     get_monthly_usage,
     get_recent_sync_errors,
     get_usage_summary,
+    insert_daily_usage,
+    insert_hourly_usage,
 )
+from src.scraper.parser import validate_daily_usage, validate_hourly_usage
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+
+@router.post(
+    "/api/ingest",
+    response_model=IngestResponse,
+    tags=["Ingest"],
+    dependencies=[Depends(verify_ingest_key)],
+)
+async def ingest_from_hands(payload: IngestRequest) -> IngestResponse:
+    """Validate and upsert consumption collected by the Hands browser adapter."""
+    started = time.monotonic()
+    daily = [DailyUsage(**item.model_dump(), source="hands") for item in payload.daily]
+    hourly = [HourlyUsage(**item.model_dump(), source="hands") for item in payload.hourly]
+
+    if any(not validate_daily_usage(item) for item in daily):
+        raise HTTPException(status_code=422, detail="Invalid daily usage record")
+    if any(not validate_hourly_usage(item) for item in hourly):
+        raise HTTPException(status_code=422, detail="Invalid hourly usage record")
+
+    from src.scheduler.jobs import check_for_spike
+
+    for item in daily:
+        await insert_daily_usage(item)
+        await check_for_spike(item)
+    for item in hourly:
+        await insert_hourly_usage(item)
+
+    dates = [item.date for item in daily] + [item.date for item in hourly]
+    total = len(daily) + len(hourly)
+    await create_sync_log(
+        SyncLog(
+            sync_type="ingest",
+            source="hands",
+            sync_time=datetime.now(timezone.utc),
+            status="success",
+            records_fetched=total,
+            records_stored=total,
+            date_range_start=min(dates) if dates else None,
+            date_range_end=max(dates) if dates else None,
+            duration_seconds=time.monotonic() - started,
+        )
+    )
+    return IngestResponse(daily=len(daily), hourly=len(hourly))
 
 
 # =============================================================================

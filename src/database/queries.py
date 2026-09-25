@@ -473,13 +473,14 @@ async def create_sync_log(log: SyncLog) -> int:
 
     await db.execute(
         """
-        INSERT INTO sync_log (sync_type, sync_time, status, records_fetched,
+        INSERT INTO sync_log (sync_type, source, sync_time, status, records_fetched,
                              records_stored, date_range_start, date_range_end,
                              error_message, retry_count, duration_seconds, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             log.sync_type,
+            log.source,
             log.sync_time.isoformat(),
             log.status,
             log.records_fetched,

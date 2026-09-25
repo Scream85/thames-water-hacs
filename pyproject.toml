@@ -15,10 +15,6 @@ dependencies = [
     # Scheduler
     "apscheduler>=3.10.0",
 
-    # Selenium for scraping
-    "selenium>=4.27.0",
-    "webdriver-manager>=4.0.0",
-
     # Configuration
     "python-dotenv>=1.0.0",
     "pydantic>=2.10.0",
@@ -32,6 +28,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+selenium = [
+    "selenium>=4.27.0",
+    "webdriver-manager>=4.0.0",
+]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",

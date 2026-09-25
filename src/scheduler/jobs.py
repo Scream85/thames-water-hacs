@@ -18,7 +18,6 @@ from src.database.queries import (
     mark_alert_notified,
 )
 from src.notifications.email import send_alert_email, send_error_notification
-from src.scraper.extractor import ThamesWaterExtractor
 from src.scraper.exceptions import ScraperError
 from src.utils.logger import get_logger
 
@@ -34,6 +33,8 @@ async def daily_hourly_fetch_job() -> None:
     1. "Monthly (by days)" + "Last 30 days" for daily data
     2. "Daily (by hours)" + latest date for hourly data
     """
+    from src.scraper.extractor import ThamesWaterExtractor
+
     start_time = time.time()
     today = datetime.now().strftime("%Y-%m-%d")
     logger.info(f"Starting daily sync for {today}")
@@ -384,6 +385,8 @@ async def fetch_hourly_for_date(date: str) -> None:
     Args:
         date: Date in YYYY-MM-DD format
     """
+    from src.scraper.extractor import ThamesWaterExtractor
+
     logger.info(f"Fetching hourly data for {date}")
 
     try:
@@ -409,6 +412,8 @@ async def backfill_job() -> None:
 
     This runs the full extraction for all available months.
     """
+    from src.scraper.extractor import ThamesWaterExtractor
+
     start_time = time.time()
     logger.info("Starting backfill job")
 

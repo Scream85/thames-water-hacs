@@ -1,7 +1,6 @@
 """APScheduler configuration and management."""
 
 import uuid
-from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -33,10 +32,7 @@ async def start_scheduler() -> None:
         return
 
     # Import jobs here to avoid circular imports
-    from src.scheduler.jobs import (
-        daily_hourly_fetch_job,
-        weekly_verification_job,
-    )
+    from src.scheduler.jobs import weekly_verification_job
 
     # Daily fetch at DAILY_FETCH_HOUR:DAILY_FETCH_MINUTE (06:00 UTC).
     #
@@ -50,21 +46,27 @@ async def start_scheduler() -> None:
     #
     # Thames Water publishes once a day with a ~3-day lag, so hourly scraping
     # could not add anything once the investigation was over.
-    scheduler.add_job(
-        daily_hourly_fetch_job,
-        CronTrigger(
-            hour=settings.daily_fetch_hour,
-            minute=settings.daily_fetch_minute,
-        ),
-        id="daily_hourly_fetch",
-        name="Fetch previous day hourly data",
-        replace_existing=True,
-        misfire_grace_time=1800,
-    )
-    logger.info(
-        f"Scheduled daily fetch at "
-        f"{settings.daily_fetch_hour:02d}:{settings.daily_fetch_minute:02d}"
-    )
+    if settings.scraper_mode == "selenium":
+        from src.scheduler.jobs import daily_hourly_fetch_job
+
+        scheduler.add_job(
+            daily_hourly_fetch_job,
+            CronTrigger(
+                hour=settings.daily_fetch_hour,
+                minute=settings.daily_fetch_minute,
+            ),
+            id="daily_hourly_fetch",
+            name="Fetch previous day hourly data",
+            replace_existing=True,
+            misfire_grace_time=1800,
+        )
+        logger.warning(
+            "Scheduled deprecated Selenium fetch at %02d:%02d",
+            settings.daily_fetch_hour,
+            settings.daily_fetch_minute,
+        )
+    else:
+        logger.info("SCRAPER_MODE=external; Selenium fetch job is disabled")
 
     # Weekly job: Verify daily totals against hourly sums
     scheduler.add_job(
@@ -106,23 +108,29 @@ async def trigger_job(job_type: str, date: str | None = None) -> str:
     Returns:
         Job ID
     """
-    from src.scheduler.jobs import (
-        daily_hourly_fetch_job,
-        weekly_verification_job,
-        backfill_job,
-    )
+    from src.scheduler.jobs import weekly_verification_job
 
     job_id = str(uuid.uuid4())[:8]
     logger.info(f"Triggering manual job: {job_type}", extra={"job_id": job_id})
 
+    if (
+        job_type in {"daily", "hourly", "backfill"}
+        and get_settings().scraper_mode != "selenium"
+    ):
+        raise ValueError(f"{job_type} job is disabled in external scraper mode")
+
     if job_type == "daily":
         # Run daily fetch immediately
+        from src.scheduler.jobs import daily_hourly_fetch_job
+
         await daily_hourly_fetch_job()
     elif job_type == "hourly" and date:
         # Run hourly fetch for specific date
         from src.scheduler.jobs import fetch_hourly_for_date
         await fetch_hourly_for_date(date)
     elif job_type == "backfill":
+        from src.scheduler.jobs import backfill_job
+
         await backfill_job()
     elif job_type == "weekly_verify":
         await weekly_verification_job()

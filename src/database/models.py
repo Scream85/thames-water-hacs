@@ -38,7 +38,8 @@ class SyncLog(BaseModel):
     """Data synchronization log entry."""
 
     id: int | None = None
-    sync_type: Literal["daily", "hourly", "weekly_verify", "backfill"]
+    sync_type: Literal["daily", "hourly", "weekly_verify", "backfill", "ingest"]
+    source: str = "scraper"
     sync_time: datetime
     status: Literal["success", "error", "partial"]
     records_fetched: int = 0
