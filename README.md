@@ -2,6 +2,19 @@
 
 Automated water usage monitoring service with data collection, REST API, dashboard, and cost tracking.
 
+## Version 2 (2026-09-25): collection moved out to hands
+
+From v2.0.0 this service **runs no browser**. Readings are collected by the separate
+[hands](https://github.com/gavraq/hands) service (Playwright on the Mac, credentials from
+1Password) and delivered to `POST /api/ingest` with an `X-Ingest-Key` header — see
+[`docs/features/ingest-from-hands.md`](docs/features/ingest-from-hands.md). The image is
+`python:3.11-slim`; `SCRAPER_MODE=external` is the only supported mode.
+
+The Selenium-in-container design that ran from the initial release until September 2026 is
+tagged [`v1-selenium`](https://github.com/gavraq/thames-water-service/releases/tag/v1-selenium)
+and is **superseded**. Its extractor (`src/scraper/`) is still in the tree behind the deprecated
+`SCRAPER_MODE=selenium` and will be removed in v2.1.
+
 ## Features
 
 - **Automated Data Collection**: Daily and hourly usage delivered by the Hands browser service
