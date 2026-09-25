@@ -87,7 +87,7 @@ Error Details:
 This is an automated notification from the Thames Water Monitoring Service.
 Please check the service logs for more details.
 
-Service URL: {settings.service_url}
+Service URL: https://water.gavinslater.co.uk
     """.strip()
 
     return await send_alert_email(subject, body)
@@ -132,7 +132,7 @@ Trend: {trend_emoji} {trend}
 {"⚠️ Warning: Usage approaching threshold!" if usage_litres > settings.spike_threshold * 0.8 else ""}
 
 ---
-View detailed stats: {settings.service_url}
+View detailed stats: https://water.gavinslater.co.uk
     """.strip()
 
     return await send_alert_email(subject, body)
