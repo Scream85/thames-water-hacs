@@ -19,11 +19,21 @@ class Settings(BaseSettings):
     )
 
     # Thames Water credentials
-    thames_water_email: str = Field(description="Thames Water login email")
-    thames_water_password: str = Field(description="Thames Water login password")
+    thames_water_email: str | None = Field(
+        default=None,
+        description="Thames Water login email (legacy Selenium mode only)",
+    )
+    thames_water_password: str | None = Field(
+        default=None,
+        description="Thames Water login password (legacy Selenium mode only)",
+    )
 
     # API authentication
     thames_water_api_key: str = Field(description="API key for authentication")
+    ingest_api_key: str | None = Field(
+        default=None,
+        description="Shared key accepted from the Hands ingest adapter",
+    )
 
     # Alert configuration
     spike_threshold: int = Field(default=800, description="Usage threshold for alerts (litres)")
@@ -83,6 +93,10 @@ class Settings(BaseSettings):
     scraper_timeout: int = Field(
         default=30,
         description="Selenium wait timeout in seconds"
+    )
+    scraper_mode: Literal["selenium", "external"] = Field(
+        default="external",
+        description="Use legacy Selenium collection or external Hands ingestion",
     )
 
     # Scheduler configuration

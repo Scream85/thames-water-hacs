@@ -1,5 +1,7 @@
 """API middleware for authentication and logging."""
 
+import hmac
+
 from fastapi import HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
 
@@ -10,6 +12,19 @@ logger = get_logger(__name__)
 
 # API Key header
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+ingest_key_header = APIKeyHeader(name="X-Ingest-Key", auto_error=False)
+
+
+async def verify_ingest_key(
+    ingest_key: str | None = Security(ingest_key_header),
+) -> str:
+    """Authenticate Hands independently from the service's administrative API key."""
+    expected = get_settings().ingest_api_key
+    if not ingest_key:
+        raise HTTPException(status_code=401, detail="Missing ingest key")
+    if not expected or not hmac.compare_digest(ingest_key, expected):
+        raise HTTPException(status_code=403, detail="Invalid ingest key")
+    return ingest_key
 
 
 async def verify_api_key(

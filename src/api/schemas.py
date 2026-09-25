@@ -143,6 +143,13 @@ class AcknowledgeAlertResponse(BaseModel):
     message: str = "Alert acknowledged"
 
 
+class IngestResponse(BaseModel):
+    """Counts returned after a Hands ingestion."""
+
+    daily: int
+    hourly: int
+
+
 class ErrorResponse(BaseModel):
     """Error response."""
 
@@ -166,3 +173,30 @@ class TriggerSyncRequest(BaseModel):
         default=None,
         description="Specific date for hourly sync (YYYY-MM-DD)"
     )
+
+
+class IngestDailyItem(BaseModel):
+    """Daily reading sent by the Hands Thames Water adapter."""
+
+    date: str
+    usage_litres: float
+    meter_reading: float | None = None
+    is_estimated: bool = False
+
+
+class IngestHourlyItem(BaseModel):
+    """Hourly reading sent by the Hands Thames Water adapter."""
+
+    date: str
+    hour: int = Field(ge=0, le=23)
+    usage_litres: float
+    meter_reading: float | None = None
+    is_estimated: bool = False
+
+
+class IngestRequest(BaseModel):
+    """Validated boundary for externally collected consumption data."""
+
+    daily: list[IngestDailyItem]
+    hourly: list[IngestHourlyItem]
+    source: Literal["hands"]

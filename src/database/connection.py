@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS hourly_usage (
 CREATE TABLE IF NOT EXISTS sync_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sync_type TEXT NOT NULL,
+    source TEXT DEFAULT 'scraper',
     sync_time TEXT NOT NULL,
     status TEXT NOT NULL,
     records_fetched INTEGER DEFAULT 0,
@@ -114,6 +115,11 @@ class Database:
 
         # Create schema
         await self._connection.executescript(SCHEMA)
+        columns = await self._connection.execute_fetchall("PRAGMA table_info(sync_log)")
+        if "source" not in {column[1] for column in columns}:
+            await self._connection.execute(
+                "ALTER TABLE sync_log ADD COLUMN source TEXT DEFAULT 'scraper'"
+            )
         await self._connection.commit()
 
         logger.info(f"Database connected: {self.db_path}")
