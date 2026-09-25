@@ -308,7 +308,7 @@ This says: "When someone visits the root URL (`/`), show them the dashboard."
 
 1. What are the two things that happen when the application starts up?
 2. What does `yield` do in the lifespan function?
-3. If you visit `http://localhost:8096/`, which function handles that request?
+3. If you visit `https://water.gavinslater.co.uk/`, which function handles that request?
 
 ---
 
@@ -421,7 +421,7 @@ class Settings(BaseSettings):
 
     # Alert configuration
     spike_threshold: int = 800                    # Litres per day
-    notification_email: str = "your-email@example.com"
+    notification_email: str = "gavin@slaters.uk.com"
 
     # Service configuration
     port: int = 8096                              # Which port to run on
@@ -1922,7 +1922,7 @@ This could indicate:
 - Unusual household activity
 - Irrigation system running too long
 
-View details: http://localhost:8096
+View details: https://water.gavinslater.co.uk
                 """.strip(),
             )
             await mark_alert_notified(alert_id)
@@ -2068,7 +2068,7 @@ The API is the "customer service desk" of the application. It provides a structu
 
 When you visit the dashboard, JavaScript code makes requests like:
 ```
-GET http://localhost:8096/api/usage/daily
+GET https://water.gavinslater.co.uk/api/usage/daily
 ```
 
 And receives JSON data:
@@ -2124,7 +2124,7 @@ async def health_check():
 - `@router.get("/health")` — This function handles GET requests to `/api/health`
 - The function returns a dictionary, which FastAPI automatically converts to JSON
 
-**Try it:** Visit `http://localhost:8096/api/health` and you'll see this JSON response.
+**Try it:** Visit `https://water.gavinslater.co.uk/api/health` and you'll see this JSON response.
 
 #### Getting Daily Usage Data
 
@@ -2255,7 +2255,7 @@ async def trigger_sync(
 
 **To call this endpoint:**
 ```bash
-curl -X POST http://localhost:8096/api/sync/trigger \
+curl -X POST https://water.gavinslater.co.uk/api/sync/trigger \
   -H "X-API-Key: your-secret-key"
 ```
 
@@ -2360,7 +2360,7 @@ async def get_hourly_usage_endpoint(date: str = Query(...)):
 
 One of FastAPI's best features: it automatically generates interactive documentation.
 
-Visit `http://localhost:8096/docs` to see:
+Visit `https://water.gavinslater.co.uk/docs` to see:
 
 - List of all endpoints
 - Expected parameters for each

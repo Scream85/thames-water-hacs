@@ -28,14 +28,8 @@ class Settings(BaseSettings):
     # Alert configuration
     spike_threshold: int = Field(default=800, description="Usage threshold for alerts (litres)")
     notification_email: str = Field(
-        default="",
+        default="gavin@slaters.uk.com",
         description="Email address for notifications"
-    )
-
-    # Service URL for email links
-    service_url: str = Field(
-        default="http://localhost:8096",
-        description="Public URL of the service for email links"
     )
 
     # Service configuration

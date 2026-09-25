@@ -1,33 +1,42 @@
 # Thames Water Monitoring Service
 
-Automated water usage monitoring service for Thames Water smart meter customers. Collects daily and hourly usage data via web scraping, provides a REST API, visual dashboard, and email alerts for unusual consumption.
+Automated water usage monitoring service with data collection, REST API, dashboard, and cost tracking.
 
 ## Features
 
 - **Automated Data Collection**: Daily and hourly usage retrieval via Selenium scraper
 - **Meter Reading Capture**: Cumulative meter readings stored with hourly data
-- **REST API**: Query usage data, summaries, and alerts programmatically
-- **Dashboard**: Visual usage trends with Chart.js (daily, hourly, monthly views)
+- **REST API**: Query usage data, summaries, and alerts
+- **Dashboard**: Visual usage trends with Chart.js
 - **Cost Tracking**: Real-time cost calculations based on Thames Water rates
-- **Spike Alerts**: Email notifications when usage exceeds configurable threshold
-- **Meter-Based Verification**: Weekly verification using meter readings for accurate data quality
+- **Spike Alerts**: Email notifications when usage exceeds threshold (800L)
+- **Meter-Based Verification**: Weekly verification using meter readings for accurate data quality checks
 
-## Prerequisites
+## Dashboard
 
-- Thames Water account with smart meter installed
-- Python 3.11+ (or Docker)
-- Chrome/Chromium (for Selenium scraping)
+The dashboard at https://water.gavinslater.co.uk displays:
+
+### Usage Statistics
+- **Latest Day**: Most recent available day's usage (~3 day delay)
+- **7-Day Average**: Rolling average consumption
+- **This Month**: Month-to-date total
+- **Active Alerts**: Unacknowledged spike alerts
+
+### Cost Estimates (Green Cards)
+- **Daily Cost**: Average daily cost including fixed charges
+- **Month to Date**: Actual cost for recorded days
+- **Projected Monthly**: Full month estimate
+- **Annual Estimate**: Yearly projection
+
+### Charts
+- Daily usage (30/90/365 day views) with 800L threshold
+- Hourly breakdown per selected date
+- Monthly comparison with averages
 
 ## Quick Start
 
-### Local Development
-
 ```bash
-# Clone the repository
-git clone https://github.com/gavraq/thames-water-service.git
-cd thames-water-service
-
-# Install dependencies (using uv)
+# Install dependencies
 uv sync
 
 # Configure environment
@@ -36,44 +45,10 @@ cp .env.example .env
 
 # Run locally
 uv run uvicorn src.main:app --reload --port 8096
-```
 
-### Docker Deployment
-
-```bash
-# Configure environment
-cp .env.example .env
-# Edit .env with your credentials
-
-# Deploy
+# Or with Docker
 docker-compose up -d
-
-# View logs
-docker-compose logs -f thames-water-service
 ```
-
-The service is designed to run on a Raspberry Pi 5 (ARM64) but works on any Docker-compatible system.
-
-## Dashboard
-
-Access the dashboard at `http://localhost:8096` (or your configured domain).
-
-### Usage Statistics
-- **Latest Day**: Most recent available day's usage (~3 day delay from Thames Water)
-- **7-Day Average**: Rolling average consumption
-- **This Month**: Month-to-date total
-- **Active Alerts**: Unacknowledged spike alerts
-
-### Cost Estimates
-- **Daily Cost**: Average daily cost including fixed charges
-- **Month to Date**: Actual cost for recorded days
-- **Projected Monthly**: Full month estimate
-- **Annual Estimate**: Yearly projection
-
-### Charts
-- Daily usage (30/90/365 day views) with threshold line
-- Hourly breakdown per selected date
-- Monthly comparison with averages
 
 ## API Endpoints
 
@@ -85,9 +60,6 @@ Access the dashboard at `http://localhost:8096` (or your configured domain).
 | `/api/usage/hourly?date=YYYY-MM-DD` | GET | Hourly breakdown |
 | `/api/usage/monthly` | GET | Monthly aggregates |
 | `/api/alerts` | GET | Alert history |
-| `/api/sync/trigger` | POST | Manual sync (requires API key) |
-
-Full API documentation available at `/docs` (Swagger UI).
 
 ## Environment Variables
 
@@ -97,17 +69,12 @@ Full API documentation available at `/docs` (Swagger UI).
 | `THAMES_WATER_PASSWORD` | Thames Water login password | Required |
 | `THAMES_WATER_API_KEY` | API authentication key | Required |
 | `SPIKE_THRESHOLD` | Usage threshold for alerts (litres) | 800 |
-| `NOTIFICATION_EMAIL` | Email for alerts | (none) |
-| `SERVICE_URL` | Public URL for email links | http://localhost:8096 |
+| `NOTIFICATION_EMAIL` | Email for alerts | gavin@slaters.uk.com |
 | `PORT` | Service port | 8096 |
-| `SMTP_HOST` | SMTP server for notifications | (none) |
-| `SMTP_PORT` | SMTP port | 587 |
-| `SMTP_USERNAME` | SMTP username | (none) |
-| `SMTP_PASSWORD` | SMTP password | (none) |
 
 ## Cost Calculation
 
-Based on Thames Water December 2025 rates:
+Based on Thames Water Dec 2025 rates:
 
 | Component | Rate |
 |-----------|------|
@@ -118,7 +85,22 @@ Based on Thames Water December 2025 rates:
 
 Formula: `Daily Cost = (Litres × £0.0040223) + £0.532`
 
-> **Note**: Rates may change. Check your Thames Water bill for current pricing.
+## Docker Deployment
+
+The service is designed to run on a Raspberry Pi 5 with ARM64 architecture.
+
+```bash
+# Deploy
+docker-compose up -d
+
+# Rebuild after changes
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f thames-water-service
+```
+
+Access via: https://water.gavinslater.co.uk
 
 ## Data Notes
 
@@ -141,37 +123,3 @@ uv run python scripts/import_history.py path/to/history.csv
 # Backfill specific month
 uv run python scripts/backfill.py Dec-2025
 ```
-
-## Architecture
-
-```
-FastAPI Application
-├── API Endpoints (/api/*)
-├── Dashboard (static HTML + Chart.js)
-├── Scheduler (APScheduler)
-│   ├── Daily Fetch (configurable time)
-│   └── Weekly Verification
-├── Scraper (Selenium + Chrome)
-└── SQLite Database
-```
-
-## Tutorial
-
-See [TUTORIAL.md](TUTORIAL.md) for a comprehensive walkthrough of the codebase, covering:
-- Project structure and architecture
-- Pydantic models and type safety
-- Async database operations
-- Selenium web scraping
-- APScheduler configuration
-- FastAPI endpoints
-- Dashboard development
-- Docker deployment
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Acknowledgments
-
-- Inspired by the need to understand an unexpectedly large water bill
-- Built with [FastAPI](https://fastapi.tiangolo.com/), [Selenium](https://selenium.dev/), and [Chart.js](https://www.chartjs.org/)

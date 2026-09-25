@@ -38,33 +38,20 @@ async def start_scheduler() -> None:
         weekly_verification_job,
     )
 
-    # Daily fetch at DAILY_FETCH_HOUR:DAILY_FETCH_MINUTE (06:00 UTC).
-    #
-    # This ran hourly from ~Dec 2024 as a "temporary" one-week investigation into
-    # Thames Water data availability, and was never reverted. The cost: a full
-    # Selenium/Chromium login every hour on a 2-core VPS, each blocking the
-    # FastAPI event loop for ~110s, so the service stopped answering even its own
-    # healthcheck for roughly 44 minutes a day. That window sat on the top of the
-    # hour and collided with the 08:00 UTC doctor run, which reported the service
-    # unreachable while it was merely blocked. Reverted 2026-09-11.
-    #
-    # Thames Water publishes once a day with a ~3-day lag, so hourly scraping
-    # could not add anything once the investigation was over.
+    # TEMPORARY: Run hourly to investigate Thames Water data availability patterns
+    # TODO: Revert to daily after ~1 week of data collection (around 2025-01-01)
+    # Original: CronTrigger(hour=settings.daily_fetch_hour, minute=settings.daily_fetch_minute)
     scheduler.add_job(
         daily_hourly_fetch_job,
         CronTrigger(
-            hour=settings.daily_fetch_hour,
-            minute=settings.daily_fetch_minute,
+            minute=0,  # Run at the top of every hour
         ),
         id="daily_hourly_fetch",
         name="Fetch previous day hourly data",
         replace_existing=True,
-        misfire_grace_time=1800,
+        misfire_grace_time=1800,  # 30 min grace period for hourly runs
     )
-    logger.info(
-        f"Scheduled daily fetch at "
-        f"{settings.daily_fetch_hour:02d}:{settings.daily_fetch_minute:02d}"
-    )
+    logger.info("Scheduled hourly fetch (TEMPORARY - investigating data availability)")
 
     # Weekly job: Verify daily totals against hourly sums
     scheduler.add_job(

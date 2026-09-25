@@ -3,115 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thames Water Usage Dashboard</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <title>Hydro Control | Thames Water Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css?v=2.0.1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 </head>
 <body>
+    <!-- Animated water background -->
+    <div class="water-bg">
+        <div class="water-wave wave-1"></div>
+        <div class="water-wave wave-2"></div>
+        <div class="water-wave wave-3"></div>
+    </div>
+
+    <!-- Flow lines decoration -->
+    <div class="flow-lines">
+        <svg class="flow-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path class="flow-path" d="M0,50 Q25,30 50,50 T100,50" />
+            <path class="flow-path delay-1" d="M0,60 Q25,40 50,60 T100,60" />
+            <path class="flow-path delay-2" d="M0,70 Q25,50 50,70 T100,70" />
+        </svg>
+    </div>
+
     <div class="container">
-        <header>
-            <h1>Thames Water Usage Dashboard</h1>
-            <div class="status-bar">
-                <span id="last-sync">Last sync: Loading...</span>
-                <span id="health-status" class="status-badge">Checking...</span>
+        <!-- Header with system status -->
+        <header class="header">
+            <div class="header-brand">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 40 40" fill="none">
+                        <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                        <path d="M20 8 C20 8 28 18 28 24 C28 28.4 24.4 32 20 32 C15.6 32 12 28.4 12 24 C12 18 20 8 20 8Z" fill="url(#dropGradient)"/>
+                        <defs>
+                            <linearGradient id="dropGradient" x1="12" y1="8" x2="28" y2="32">
+                                <stop offset="0%" stop-color="#22D3EE"/>
+                                <stop offset="100%" stop-color="#0891B2"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>Hydro Control</h1>
+                    <span class="brand-subtitle">Thames Water Monitor</span>
+                </div>
+            </div>
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="led-indicator" id="led-status"></span>
+                    <span id="health-status" class="status-text">Initializing...</span>
+                </div>
+                <div class="sync-info">
+                    <span class="sync-label">LAST SYNC</span>
+                    <span id="last-sync" class="sync-time">--:--</span>
+                </div>
             </div>
         </header>
 
-        <section class="summary-cards">
-            <div class="card">
-                <h3>Latest Day</h3>
-                <div class="value" id="today-usage">--</div>
-                <div class="unit">litres</div>
-            </div>
-            <div class="card">
-                <h3>7-Day Average</h3>
-                <div class="value" id="avg-usage">--</div>
-                <div class="unit">litres/day</div>
-            </div>
-            <div class="card">
-                <h3>This Month</h3>
-                <div class="value" id="month-usage">--</div>
-                <div class="unit">litres</div>
-            </div>
-            <div class="card alert-card" id="alert-card">
-                <h3>Active Alerts</h3>
-                <div class="value" id="alert-count">0</div>
-                <div class="unit">alerts</div>
-            </div>
-        </section>
-
-        <section class="summary-cards cost-cards">
-            <div class="card cost-card">
-                <h3>Daily Cost (Avg)</h3>
-                <div class="value" id="daily-cost">--</div>
-                <div class="unit">per day</div>
-            </div>
-            <div class="card cost-card">
-                <h3>Month to Date</h3>
-                <div class="value" id="month-cost">--</div>
-                <div class="unit">this month</div>
-            </div>
-            <div class="card cost-card">
-                <h3>Projected Monthly</h3>
-                <div class="value" id="projected-cost">--</div>
-                <div class="unit">full month est.</div>
-            </div>
-            <div class="card cost-card">
-                <h3>Annual Estimate</h3>
-                <div class="value" id="annual-cost">--</div>
-                <div class="unit">per year</div>
-            </div>
-        </section>
-
-        <section class="chart-section">
-            <div class="chart-header">
-                <h2>Daily Usage (Last 30 Days)</h2>
-                <div class="chart-controls">
-                    <button class="btn active" data-range="30">30 Days</button>
-                    <button class="btn" data-range="90">90 Days</button>
-                    <button class="btn" data-range="365">1 Year</button>
+        <!-- Main metrics gauge section -->
+        <section class="hero-metrics">
+            <div class="gauge-card glass-card">
+                <div class="gauge-header">
+                    <span class="gauge-label">DAILY CONSUMPTION</span>
+                    <span class="gauge-date" id="latest-date">Loading...</span>
+                    <span class="led-indicator led-pulse"></span>
+                </div>
+                <div class="gauge-container">
+                    <svg class="gauge-svg" viewBox="0 0 200 120">
+                        <!-- Gauge background arc -->
+                        <path class="gauge-bg" d="M20,100 A80,80 0 0,1 180,100" />
+                        <!-- Gauge fill arc -->
+                        <path class="gauge-fill" id="gauge-arc" d="M20,100 A80,80 0 0,1 180,100" />
+                        <!-- Threshold marker -->
+                        <line class="gauge-threshold" x1="160" y1="40" x2="165" y2="35" />
+                        <!-- Gauge ticks -->
+                        <g class="gauge-ticks">
+                            <text x="15" y="115">0</text>
+                            <text x="55" y="45">250</text>
+                            <text x="95" y="25">500</text>
+                            <text x="135" y="45">750</text>
+                            <text x="175" y="115">1000+</text>
+                        </g>
+                    </svg>
+                    <div class="gauge-value-container">
+                        <span class="gauge-value" id="today-usage">--</span>
+                        <span class="gauge-unit">litres</span>
+                    </div>
+                </div>
+                <div class="gauge-footer">
+                    <span class="threshold-label">Threshold: 800L</span>
                 </div>
             </div>
-            <div class="chart-container">
-                <canvas id="daily-chart"></canvas>
+
+            <div class="metrics-stack">
+                <div class="metric-card glass-card">
+                    <div class="metric-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18"/>
+                            <path d="M18 17V9"/>
+                            <path d="M13 17V5"/>
+                            <path d="M8 17v-3"/>
+                        </svg>
+                    </div>
+                    <div class="metric-content">
+                        <span class="metric-label">7-DAY AVG</span>
+                        <span class="metric-value" id="avg-usage">--</span>
+                        <span class="metric-unit">L/day</span>
+                    </div>
+                </div>
+
+                <div class="metric-card glass-card">
+                    <div class="metric-icon cyan">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </div>
+                    <div class="metric-content">
+                        <span class="metric-label">THIS MONTH</span>
+                        <span class="metric-value" id="month-usage">--</span>
+                        <span class="metric-unit">litres</span>
+                    </div>
+                </div>
+
+                <div class="metric-card glass-card alert-metric" id="alert-card">
+                    <div class="metric-icon amber">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <div class="metric-content">
+                        <span class="metric-label">ACTIVE ALERTS</span>
+                        <span class="metric-value" id="alert-count">0</span>
+                        <span class="metric-unit">alerts</span>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section class="chart-section">
-            <div class="chart-header">
-                <h2>Hourly Breakdown</h2>
-                <input type="date" id="hourly-date" class="date-picker">
+        <!-- Cost Terminal Section -->
+        <section class="cost-section">
+            <div class="section-header">
+                <h2>
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    Cost Analysis
+                </h2>
             </div>
-            <div class="chart-container">
-                <canvas id="hourly-chart"></canvas>
+            <div class="terminal-panel glass-card">
+                <div class="terminal-header">
+                    <div class="terminal-dots">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                    </div>
+                    <span class="terminal-title">cost_analysis.sh</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="terminal-line">
+                        <span class="prompt">$</span>
+                        <span class="command">calculate --daily-average</span>
+                    </div>
+                    <div class="terminal-output">
+                        <div class="cost-row">
+                            <span class="cost-label">Daily Cost (Avg)</span>
+                            <span class="cost-value" id="daily-cost">--</span>
+                        </div>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="prompt">$</span>
+                        <span class="command">calculate --month-to-date</span>
+                    </div>
+                    <div class="terminal-output">
+                        <div class="cost-row">
+                            <span class="cost-label">Month to Date</span>
+                            <span class="cost-value" id="month-cost">--</span>
+                        </div>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="prompt">$</span>
+                        <span class="command">calculate --projected</span>
+                    </div>
+                    <div class="terminal-output">
+                        <div class="cost-row">
+                            <span class="cost-label">Projected Monthly</span>
+                            <span class="cost-value cyan" id="projected-cost">--</span>
+                        </div>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="prompt">$</span>
+                        <span class="command">calculate --annual-estimate</span>
+                    </div>
+                    <div class="terminal-output highlight">
+                        <div class="cost-row">
+                            <span class="cost-label">Annual Estimate</span>
+                            <span class="cost-value large" id="annual-cost">--</span>
+                        </div>
+                    </div>
+                    <div class="terminal-line blink">
+                        <span class="prompt">$</span>
+                        <span class="cursor">_</span>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section class="chart-section">
-            <div class="chart-header">
-                <h2>Monthly Comparison</h2>
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <!-- Daily Usage Chart -->
+            <div class="chart-panel glass-card">
+                <div class="chart-header">
+                    <h2>
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+                        </svg>
+                        Daily Usage
+                    </h2>
+                    <div class="chart-controls">
+                        <button class="control-btn active" data-range="30">30D</button>
+                        <button class="control-btn" data-range="90">90D</button>
+                        <button class="control-btn" data-range="365">1Y</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="daily-chart"></canvas>
+                </div>
             </div>
-            <div class="chart-container">
-                <canvas id="monthly-chart"></canvas>
+
+            <!-- Hourly Breakdown Chart -->
+            <div class="chart-panel glass-card">
+                <div class="chart-header">
+                    <h2>
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12,6 12,12 16,14"/>
+                        </svg>
+                        Hourly Breakdown
+                    </h2>
+                    <div class="date-picker-wrapper">
+                        <input type="date" id="hourly-date" class="date-input">
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="hourly-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Monthly Comparison Chart -->
+            <div class="chart-panel glass-card full-width">
+                <div class="chart-header">
+                    <h2>
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Monthly Comparison
+                    </h2>
+                </div>
+                <div class="chart-container wide">
+                    <canvas id="monthly-chart"></canvas>
+                </div>
             </div>
         </section>
 
-        <section class="alerts-section">
-            <div class="chart-header">
-                <h2>Recent Alerts</h2>
+        <!-- Alerts Section -->
+        <section class="alerts-section glass-card" id="alerts-section">
+            <div class="alerts-header">
+                <h2>
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    Alert Log
+                </h2>
+                <div class="alerts-badge" id="alerts-badge">
+                    <span id="alerts-badge-count">0</span>
+                </div>
             </div>
             <div id="alerts-list" class="alerts-list">
-                <p class="loading">Loading alerts...</p>
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <span>Scanning for alerts...</span>
+                </div>
             </div>
         </section>
 
-        <footer>
-            <p>Thames Water Monitoring Service v1.0.0</p>
-            <p>Data refreshes every 5 minutes</p>
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">HYDRO</span>
+                    <span class="footer-version">v2.0.0</span>
+                </div>
+                <div class="footer-info">
+                    <span class="led-indicator led-mini led-pulse"></span>
+                    <span>Data updated daily at 6am · ~3 day lag from Thames Water</span>
+                </div>
+            </div>
         </footer>
     </div>
 
-    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/dashboard.js?v=2.0.1"></script>
 </body>
 </html>

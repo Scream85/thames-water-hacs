@@ -367,7 +367,7 @@ This could indicate:
 
 Please check your water usage.
 
-View details: {settings.service_url}
+View details: https://water.gavinslater.co.uk
                 """.strip(),
             )
             await mark_alert_notified(alert_id)

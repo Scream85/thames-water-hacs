@@ -7,7 +7,7 @@ FROM seleniarm/standalone-chromium:latest
 USER root
 
 # Install uv package manager (Python 3.11 is already in the base image)
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+RUN apt-get update && apt-get -o Dpkg::Options::="--force-overwrite" install -y --no-install-recommends curl \
     && curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 ENV PATH="/usr/local/bin:$PATH"
