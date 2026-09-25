@@ -364,6 +364,7 @@ async def get_sync_status() -> SyncStatusResponse:
     try:
         last_daily = await get_last_sync("daily")
         last_weekly = await get_last_sync("weekly_verify")
+        last_ingest = await get_last_sync("ingest")
         recent_errors = await get_recent_sync_errors(5)
 
         return SyncStatusResponse(
@@ -372,6 +373,10 @@ async def get_sync_status() -> SyncStatusResponse:
                 "last_daily_sync": last_daily["sync_time"] if last_daily else None,
                 "last_daily_status": last_daily["status"] if last_daily else None,
                 "last_weekly_verify": last_weekly["sync_time"] if last_weekly else None,
+                "last_ingest_sync": last_ingest["sync_time"] if last_ingest else None,
+                "last_ingest_status": last_ingest["status"] if last_ingest else None,
+                "last_ingest_source": last_ingest["source"] if last_ingest else None,
+                "last_ingest_range_end": last_ingest["date_range_end"] if last_ingest else None,
                 "pending_jobs": 0,  # Could be populated from scheduler
                 "recent_errors": [
                     {
