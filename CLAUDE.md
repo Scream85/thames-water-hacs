@@ -129,20 +129,30 @@ uv run python scripts/backfill.py Dec-2025
 uv run python scripts/test_hourly.py
 ```
 
-## Docker Deployment
+## Deployment
+
+Docker container on the **Hostinger VPS** at `~/apps/thames-water-service` (ZeroTier only,
+`gavin@192.168.195.51`), deployed from branch **`prod`** — this worktree, `services/thames-water-prod`,
+which matches GitHub `main`. The VPS copy is **not a git checkout**, so `git pull` there does nothing:
+the tree is shipped by tar over ssh (BSD rsync silently skips updates), leaving `data/`, `logs/` and
+`.env` in place.
 
 ```bash
-# Build and run with docker-compose
-docker-compose up -d thames-water-service
-
-# View logs
-docker-compose logs -f thames-water-service
-
-# Rebuild after changes
-docker-compose up -d --build thames-water-service
+cd /Volumes/DockSSD/projects/life/services/thames-water-prod
+tar --exclude=.git --exclude=.venv --exclude='__pycache__' --exclude=data --exclude=logs --exclude=.env --exclude='*.bak*' -cf - . \
+  | ssh gavin@192.168.195.51 'cd ~/apps/thames-water-service && tar -xf -'
+ssh gavin@192.168.195.51 'cd ~/apps/thames-water-service && docker compose up -d --build'
+# gate: something only the new code produces, not a 200 from /health
+curl -s -o /dev/null -w '%{http_code}\n' -A gavin-life-scripts/1.0 -X POST -H 'Content-Type: application/json' \
+  -d '{"daily":[],"hourly":[]}' https://water.gavinslater.co.uk/api/ingest   # expect 401
 ```
 
-## Scraper Details
+**Since v2.0.0 (2026-09-25) this service runs no browser** — readings arrive from the `hands` service via
+`POST /api/ingest`; see the README. The *Scraper Details* section below describes the superseded v1
+Selenium design (tag `v1-selenium`). The Raspberry Pi deployment is gone. Current hosting record:
+`life-vault/docs/services/personal/Thames Water Service.md`.
+
+## Scraper Details (v1, superseded)
 
 The scraper uses Selenium with headless Chrome to:
 1. Log in to Thames Water account
