@@ -76,7 +76,6 @@ def setup_logging() -> None:
     root_logger.addHandler(console_handler)
 
     # Reduce noise from third-party libraries
-    logging.getLogger("selenium").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("asyncio").setLevel(logging.WARNING)
     logging.getLogger("apscheduler").setLevel(logging.INFO)

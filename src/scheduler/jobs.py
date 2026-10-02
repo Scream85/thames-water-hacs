@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from src.config import get_settings
-from src.database.models import Alert, DailyUsage, HourlyUsage, SyncLog
+from src.database.models import Alert, DailyUsage, SyncLog
 from src.database.queries import (
     alert_exists,
     create_alert,
@@ -14,146 +14,12 @@ from src.database.queries import (
     get_meter_readings_for_date,
     get_previous_day_end_reading,
     insert_daily_usage,
-    insert_hourly_usage,
     mark_alert_notified,
 )
-from src.notifications.email import send_alert_email, send_error_notification
-from src.scraper.exceptions import ScraperError
+from src.notifications.email import send_alert_email
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-async def daily_hourly_fetch_job() -> None:
-    """
-    Daily job to fetch latest daily and hourly data.
-
-    Runs at 6:00 AM daily (configurable).
-    Uses simplified workflow:
-    1. "Monthly (by days)" + "Last 30 days" for daily data
-    2. "Daily (by hours)" + latest date for hourly data
-    """
-    from src.scraper.extractor import ThamesWaterExtractor
-
-    start_time = time.time()
-    today = datetime.now().strftime("%Y-%m-%d")
-    logger.info(f"Starting daily sync for {today}")
-
-    sync_log = SyncLog(
-        sync_type="daily",
-        sync_time=datetime.now(timezone.utc),
-        status="success",
-    )
-
-    try:
-        extractor = ThamesWaterExtractor()
-        daily_records, hourly_records, attempted_hourly_date = extractor.run_daily_sync()
-
-        # Store daily records (only new ones)
-        daily_stored = 0
-        latest_date = None
-        for record in daily_records:
-            # Check if we already have this record
-            existing = await get_daily_usage(
-                start_date=record.date,
-                end_date=record.date,
-                limit=1
-            )
-            if not existing:
-                await insert_daily_usage(record)
-                daily_stored += 1
-                await check_for_spike(record)
-
-            # Track date range
-            if latest_date is None or record.date > latest_date:
-                latest_date = record.date
-
-        # Store hourly records
-        hourly_stored = 0
-        hourly_date = None
-        for record in hourly_records:
-            await insert_hourly_usage(record)
-            hourly_stored += 1
-            hourly_date = record.date  # Track which date we got data for
-
-        # Create alert if hourly data was unavailable for the attempted date
-        if not hourly_records and attempted_hourly_date:
-            logger.warning(
-                f"No hourly data available for {attempted_hourly_date}",
-                extra={"attempted_date": attempted_hourly_date}
-            )
-            # Check if we already have an alert for this date
-            if not await alert_exists("data_unavailable", attempted_hourly_date):
-                alert = Alert(
-                    alert_type="data_unavailable",
-                    alert_date=attempted_hourly_date,
-                    message=f"Thames Water has no hourly data available for {attempted_hourly_date}",
-                    value=None,
-                )
-                await create_alert(alert)
-
-        # Create alert if data became available (we got data AND previously had data_unavailable)
-        if hourly_records and hourly_date:
-            # Check if we previously flagged this date as unavailable
-            if await alert_exists("data_unavailable", hourly_date):
-                # Data is now available! Log when it became available
-                if not await alert_exists("data_available", hourly_date):
-                    logger.info(
-                        f"Data now available for {hourly_date}",
-                        extra={"date": hourly_date, "records": hourly_stored}
-                    )
-                    alert = Alert(
-                        alert_type="data_available",
-                        alert_date=hourly_date,
-                        message=f"Thames Water hourly data is now available for {hourly_date} ({hourly_stored} records)",
-                        value=float(hourly_stored),
-                    )
-                    await create_alert(alert)
-
-        sync_log.records_fetched = len(daily_records) + len(hourly_records)
-        sync_log.records_stored = daily_stored + hourly_stored
-
-        if daily_records:
-            sync_log.date_range_start = min(r.date for r in daily_records)
-            sync_log.date_range_end = max(r.date for r in daily_records)
-
-        logger.info(
-            f"Daily sync complete",
-            extra={
-                "daily_fetched": len(daily_records),
-                "daily_stored": daily_stored,
-                "hourly_fetched": len(hourly_records),
-                "hourly_stored": hourly_stored,
-                "latest_date": latest_date,
-            }
-        )
-
-    except ScraperError as e:
-        sync_log.status = "error"
-        sync_log.error_message = str(e)
-        logger.error(f"Daily fetch failed: {e}")
-
-        # Send error notification
-        await send_error_notification(
-            error_type="Daily Sync Failed",
-            error_message=str(e),
-            date=yesterday,
-        )
-
-    except Exception as e:
-        sync_log.status = "error"
-        sync_log.error_message = str(e)
-        logger.error(f"Daily fetch failed with unexpected error: {e}")
-
-        await send_error_notification(
-            error_type="Daily Sync Error",
-            error_message=str(e),
-            date=yesterday,
-        )
-
-    finally:
-        sync_log.duration_seconds = time.time() - start_time
-        await create_sync_log(sync_log)
 
 
 async def weekly_verification_job() -> None:
@@ -376,87 +242,3 @@ View details: https://water.gavinslater.co.uk
 
         except Exception as e:
             logger.error(f"Failed to send spike alert: {e}")
-
-
-async def fetch_hourly_for_date(date: str) -> None:
-    """
-    Fetch hourly data for a specific date.
-
-    Args:
-        date: Date in YYYY-MM-DD format
-    """
-    from src.scraper.extractor import ThamesWaterExtractor
-
-    logger.info(f"Fetching hourly data for {date}")
-
-    try:
-        extractor = ThamesWaterExtractor()
-        _, hourly_records = extractor.run(include_hourly=True)
-
-        records_stored = 0
-        for record in hourly_records:
-            if record.date == date:
-                await insert_hourly_usage(record)
-                records_stored += 1
-
-        logger.info(f"Stored {records_stored} hourly records for {date}")
-
-    except Exception as e:
-        logger.error(f"Failed to fetch hourly data for {date}: {e}")
-        raise
-
-
-async def backfill_job() -> None:
-    """
-    Backfill job to fetch all available historical data.
-
-    This runs the full extraction for all available months.
-    """
-    from src.scraper.extractor import ThamesWaterExtractor
-
-    start_time = time.time()
-    logger.info("Starting backfill job")
-
-    sync_log = SyncLog(
-        sync_type="backfill",
-        sync_time=datetime.now(timezone.utc),
-        status="success",
-    )
-
-    try:
-        extractor = ThamesWaterExtractor()
-
-        # Generate months to extract (Dec 2024 - current)
-        months = [
-            "Dec-2024", "Jan-2025", "Feb-2025", "Mar-2025",
-            "Apr-2025", "May-2025", "Jun-2025", "Jul-2025",
-            "Aug-2025", "Sep-2025", "Oct-2025", "Nov-2025", "Dec-2025",
-        ]
-
-        daily_records, _ = extractor.run(months=months)
-
-        records_stored = 0
-        for record in daily_records:
-            await insert_daily_usage(record)
-            records_stored += 1
-
-            # Check for spike
-            await check_for_spike(record)
-
-        sync_log.records_fetched = len(daily_records)
-        sync_log.records_stored = records_stored
-
-        if daily_records:
-            sync_log.date_range_start = daily_records[0].date
-            sync_log.date_range_end = daily_records[-1].date
-
-        logger.info(f"Backfill complete: {records_stored} records stored")
-
-    except Exception as e:
-        sync_log.status = "error"
-        sync_log.error_message = str(e)
-        logger.error(f"Backfill failed: {e}")
-
-    finally:
-        sync_log.duration_seconds = time.time() - start_time
-        await create_sync_log(sync_log)

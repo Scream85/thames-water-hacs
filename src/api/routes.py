@@ -43,7 +43,7 @@ from src.database.queries import (
     insert_daily_usage,
     insert_hourly_usage,
 )
-from src.scraper.parser import validate_daily_usage, validate_hourly_usage
+from src.ingest.validation import validate_daily_usage, validate_hourly_usage
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -123,7 +123,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status=status,
         timestamp=datetime.now(timezone.utc),
-        version="1.0.0",
+        version="2.1.0",
         services={
             "database": db_healthy,
             "scraper": True,  # Assume scraper is available

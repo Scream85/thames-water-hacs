@@ -39,14 +39,13 @@ FastAPI Application
 | `src/main.py` | FastAPI application entry point |
 | `src/config.py` | Environment configuration |
 | `src/api/routes.py` | API endpoint definitions |
-| `src/scraper/extractor.py` | Thames Water data scraper (Selenium) |
+| `src/ingest/validation.py` | Sanity checks on readings posted by hands |
 | `src/scheduler/jobs.py` | Scheduled job definitions |
 | `src/database/queries.py` | Database access layer |
 | `static/index.html` | Dashboard HTML |
 | `static/js/dashboard.js` | Dashboard JavaScript (includes cost calculations) |
 | `static/css/styles.css` | Dashboard styling |
 | `scripts/import_history.py` | Historical data import |
-| `scripts/test_hourly.py` | Test hourly extraction |
 
 ## Dashboard Features
 
@@ -121,12 +120,6 @@ uv run uvicorn src.main:app --reload --port 8096
 
 # Import historical data
 uv run python scripts/import_history.py ../integrations/thames-water/full_history.csv
-
-# Run backfill for specific month
-uv run python scripts/backfill.py Dec-2025
-
-# Test hourly extraction
-uv run python scripts/test_hourly.py
 ```
 
 ## Deployment
@@ -246,8 +239,7 @@ Alerts are created for:
 
 ### No hourly data for certain dates
 - Check date dropdown format in Thames Water UI (should be DD-MM-YYYY)
-- Run `scripts/test_hourly.py` to debug extraction
-- View scraper logs for dropdown detection messages
+- Collection is the hands `thames-water` adapter on the Mac; debug there (`GET http://localhost:8094/sessions`)
 
 ### Cost calculations seem wrong
 - Verify pricing constants in `static/js/dashboard.js`

@@ -35,8 +35,8 @@ The response reports accepted counts: `{"daily": 1, "hourly": 1}`.
 - Existing daily and hourly upserts make repeat delivery idempotent by date and date/hour.
 - Every successful delivery adds an `ingest` sync log with `source="hands"`.
 - Daily records pass through the existing spike check and its alert de-duplication.
-- `SCRAPER_MODE=external` suppresses Selenium collection while retaining weekly database
-  verification. `selenium` is a deprecated rollback mode and optional dependency.
+- The only scheduled job is the weekly database verification; v2.1.0 removed the Selenium
+  collector and the `SCRAPER_MODE` switch.
 
 ## Implemented and deployment notes
 
@@ -47,7 +47,6 @@ Set these values in the deployment `.env` before rebuilding:
 
 ```dotenv
 INGEST_API_KEY=<same secret used as WATER_INGEST_KEY by Hands>
-SCRAPER_MODE=external
 ```
 
 Keep `THAMES_WATER_API_KEY` for the existing administrative endpoints. External mode does not
