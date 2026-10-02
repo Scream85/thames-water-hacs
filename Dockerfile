@@ -33,7 +33,6 @@ ENV PYTHONUNBUFFERED=1
 ENV DB_PATH=/app/data/thames_water.db
 ENV LOG_LEVEL=info
 ENV PORT=8096
-ENV SCRAPER_MODE=external
 
 # Create non-root user for running the app
 RUN useradd -m -u 1000 appuser && \

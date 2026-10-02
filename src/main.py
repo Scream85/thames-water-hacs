@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Thames Water Monitoring Service",
     description="Automated water usage monitoring with REST API and dashboard",
-    version="1.0.0",
+    version="2.1.0",
     lifespan=lifespan,
 )
 

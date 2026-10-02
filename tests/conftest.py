@@ -10,7 +10,6 @@ from src.config import get_settings
 async def isolated_database(tmp_path, monkeypatch):
     monkeypatch.setenv("THAMES_WATER_API_KEY", "admin-test-key")
     monkeypatch.setenv("INGEST_API_KEY", "hands-test-key")
-    monkeypatch.setenv("SCRAPER_MODE", "external")
     monkeypatch.setenv("DB_PATH", str(tmp_path / "water.db"))
     monkeypatch.setenv("NOTIFICATION_EMAIL", "")
     get_settings.cache_clear()

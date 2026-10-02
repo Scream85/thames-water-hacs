@@ -1,6 +1,6 @@
 [project]
 name = "thames-water-service"
-version = "1.0.0"
+version = "2.1.0"
 description = "Thames Water monitoring service with automated data collection, REST API, and dashboard"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -28,10 +28,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-selenium = [
-    "selenium>=4.27.0",
-    "webdriver-manager>=4.0.0",
-]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",

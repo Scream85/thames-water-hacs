@@ -8,12 +8,12 @@ From v2.0.0 this service **runs no browser**. Readings are collected by the sepa
 [hands](https://github.com/gavraq/hands) service (Playwright on the Mac, credentials from
 1Password) and delivered to `POST /api/ingest` with an `X-Ingest-Key` header — see
 [`docs/features/ingest-from-hands.md`](docs/features/ingest-from-hands.md). The image is
-`python:3.11-slim`; `SCRAPER_MODE=external` is the only supported mode.
+`python:3.11-slim`.
 
 The Selenium-in-container design that ran from the initial release until September 2026 is
 tagged [`v1-selenium`](https://github.com/gavraq/thames-water-service/releases/tag/v1-selenium)
-and is **superseded**. Its extractor (`src/scraper/`) is still in the tree behind the deprecated
-`SCRAPER_MODE=selenium` and will be removed in v2.1.
+and is **superseded**. v2.1.0 (2026-10-02) removed its extractor (`src/scraper/`), the
+`SCRAPER_MODE` switch and the optional Selenium dependency; to run it again, check out `v1-selenium`.
 
 ## Features
 
@@ -54,7 +54,7 @@ uv sync
 
 # Configure environment
 cp .env.example .env
-# Set INGEST_API_KEY, SCRAPER_MODE=external, and the existing admin API key
+# Set INGEST_API_KEY and the existing admin API key
 
 # Run locally
 uv run uvicorn src.main:app --reload --port 8096
@@ -81,9 +81,6 @@ docker-compose up -d
 |----------|-------------|---------|
 | `THAMES_WATER_API_KEY` | API authentication key | Required |
 | `INGEST_API_KEY` | Separate Hands ingest key | Required |
-| `SCRAPER_MODE` | `external` or deprecated `selenium` collection | external |
-| `THAMES_WATER_EMAIL` | Login email for deprecated Selenium mode | None |
-| `THAMES_WATER_PASSWORD` | Login password for deprecated Selenium mode | None |
 | `SPIKE_THRESHOLD` | Usage threshold for alerts (litres) | 800 |
 | `NOTIFICATION_EMAIL` | Email for alerts | gavin@slaters.uk.com |
 | `PORT` | Service port | 8096 |
@@ -126,16 +123,10 @@ account's consumption JSON, validates daily and hourly records, and posts them t
 into SQLite, creates spike alerts, and records a `source="hands"` sync log. Re-posting the same
 date/hour updates the existing rows rather than duplicating them.
 
-Production runs with `SCRAPER_MODE=external`, so APScheduler keeps the database-only weekly
-verification job but does not register the Selenium collection job. See
+APScheduler runs one job, the database-only weekly verification (also triggerable with
+`POST /api/sync/trigger` and `{"sync_type": "weekly_verify"}`). See
 [`docs/features/ingest-from-hands.md`](docs/features/ingest-from-hands.md) for the contract and
 deployment notes.
-
-### Legacy Selenium extractor (deprecated)
-
-The in-process extractor is retained only for rollback via `SCRAPER_MODE=selenium`. It requires
-the optional `selenium` dependency group and a separately supplied Chrome/chromedriver runtime;
-neither is present in the slim production image.
 
 ## Data Notes
 
@@ -149,12 +140,6 @@ neither is present in the slim production image.
 ## Development
 
 ```bash
-# Test hourly data extraction
-uv run python scripts/test_hourly.py
-
 # Import historical CSV data
 uv run python scripts/import_history.py path/to/history.csv
-
-# Backfill specific month
-uv run python scripts/backfill.py Dec-2025
 ```

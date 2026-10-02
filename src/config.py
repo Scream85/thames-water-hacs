@@ -18,16 +18,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Thames Water credentials
-    thames_water_email: str | None = Field(
-        default=None,
-        description="Thames Water login email (legacy Selenium mode only)",
-    )
-    thames_water_password: str | None = Field(
-        default=None,
-        description="Thames Water login password (legacy Selenium mode only)",
-    )
-
     # API authentication
     thames_water_api_key: str = Field(description="API key for authentication")
     ingest_api_key: str | None = Field(
@@ -85,29 +75,7 @@ class Settings(BaseSettings):
         description="Whether Gmail MCP is available for notifications"
     )
 
-    # Scraper configuration
-    scraper_headless: bool = Field(
-        default=True,
-        description="Run Chrome in headless mode"
-    )
-    scraper_timeout: int = Field(
-        default=30,
-        description="Selenium wait timeout in seconds"
-    )
-    scraper_mode: Literal["selenium", "external"] = Field(
-        default="external",
-        description="Use legacy Selenium collection or external Hands ingestion",
-    )
-
     # Scheduler configuration
-    daily_fetch_hour: int = Field(
-        default=6,
-        description="Hour to run daily fetch (0-23)"
-    )
-    daily_fetch_minute: int = Field(
-        default=0,
-        description="Minute to run daily fetch (0-59)"
-    )
     weekly_verify_day: str = Field(
         default="sun",
         description="Day of week for weekly verification"

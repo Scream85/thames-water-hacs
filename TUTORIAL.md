@@ -2,6 +2,8 @@
 
 *A step-by-step guide to understanding this Python codebase*
 
+> **Historical (v1).** This tutorial walks the Selenium-era design tagged `v1-selenium`. From v2.0.0 collection moved to hands, and v2.1.0 removed the scraper, its settings and the backfill scripts from this tree.
+
 ---
 
 ## Table of Contents

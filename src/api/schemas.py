@@ -166,7 +166,7 @@ class ErrorResponse(BaseModel):
 class TriggerSyncRequest(BaseModel):
     """Request to trigger a sync job."""
 
-    sync_type: Literal["daily", "hourly", "backfill"] = Field(
+    sync_type: Literal["weekly_verify"] = Field(
         description="Type of sync to trigger"
     )
     date: str | None = Field(
