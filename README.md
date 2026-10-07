@@ -106,6 +106,7 @@ The domain changed in 0.26.10.0, so Home Assistant sees a different integration:
 | Meter reading | litres; attribute `statistic_id` |
 | Minimum hourly usage | litres in the quietest hour of the latest complete day, with `date` and `hour`. Stays well above zero overnight if there is a leak |
 | Last data | diagnostic timestamp of the newest hour Thames Water has reported |
+| Usage and meter reading in m³ | the five volume sensors above again in cubic metres (three decimals), for comparing with meters that report m³ |
 | Latest day cost / Month-to-date cost | GBP, uses Thames Water's published tariff + daily standing charge |
 | Usage spike | problem binary sensor, on when latest day > threshold (Configure -> default 800 L) |
 

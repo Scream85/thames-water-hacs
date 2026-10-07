@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -128,6 +128,37 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
     ),
 )
 
+# The same volume figures in cubic metres, for lining Thames Water up with meters that
+# report m3. They are extra entities rather than a choice of unit, so both are always
+# there. Thames Water reports whole litres, so three decimals in m3 loses nothing.
+CUBIC_METRE_KEYS = (
+    "latest_day_usage",
+    "average_7d",
+    "month_to_date",
+    "meter_reading",
+    "min_hourly_usage",
+)
+
+
+def _in_cubic_metres(description: ThamesWaterSensorDescription) -> ThamesWaterSensorDescription:
+    litres = description.value_fn
+
+    def cubic_metres(data: ThamesWaterData) -> float | None:
+        value = litres(data)
+        return None if value is None else value / 1000
+
+    return replace(
+        description,
+        key=f"{description.key}_m3",
+        translation_key=f"{description.key}_m3",
+        native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
+        suggested_display_precision=3,
+        value_fn=cubic_metres,
+    )
+
+
+CUBIC_METRE_SENSORS = tuple(_in_cubic_metres(d) for d in SENSORS if d.key in CUBIC_METRE_KEYS)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -135,7 +166,7 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities(ThamesWaterSensor(coordinator, d) for d in SENSORS)
+    async_add_entities(ThamesWaterSensor(coordinator, d) for d in (*SENSORS, *CUBIC_METRE_SENSORS))
 
 
 class ThamesWaterSensor(ThamesWaterEntity, SensorEntity):

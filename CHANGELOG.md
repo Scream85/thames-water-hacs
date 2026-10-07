@@ -7,10 +7,12 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
 
 ### Changed
 - Litre sensors show whole litres (`345 L`, not `345.0 L`), as Thames Water reports whole
-  litres. Each one can still be switched to m3 in its entity settings, where Home Assistant
-  converts the value and adjusts the decimals, so there are no separate m3 sensors.
+  litres.
 
 ### Added
+- Cubic metre (m³) twins of the five volume sensors (latest day, 7-day average, month-to-date,
+  meter reading and minimum hourly usage), with three decimals, for lining Thames Water up with
+  meters that report m³. They are extra entities, so both units are always available.
 - Minimum hourly usage sensor (the quietest hour of the latest complete day, a leak indicator)
   and a Last data diagnostic timestamp sensor. Idea from `ale770/ha-thames-water`.
 - `scripts/live_check.py`, a read-only check of the real Thames Water API for maintainers.

@@ -128,11 +128,7 @@ async def test_minimum_hourly_usage_has_no_value_without_a_complete_day(
     ["latest_day_usage", "average_7d", "month_to_date", "meter_reading", "min_hourly_usage"],
 )
 async def test_litre_sensors_show_whole_litres(hass: HomeAssistant, key: str) -> None:
-    """Thames Water reports whole litres, so "345.0 L" is noise.
-
-    Water sensors can be switched to m3 in the entity settings, and Home Assistant
-    adjusts the decimals for the converted unit, so no separate m3 entities are needed.
-    """
+    """Thames Water reports whole litres, so "345.0 L" is noise."""
     raw = _raw()
     raw["hourly"] = _full_day_hourly()
     await _setup(hass, _entry(), raw)
@@ -142,6 +138,37 @@ async def test_litre_sensors_show_whole_litres(hass: HomeAssistant, key: str) ->
     entry = registry.async_get(entity_id)
     assert entry.options["sensor"]["suggested_display_precision"] == 0
     assert entry.unit_of_measurement == "L"
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["latest_day_usage", "average_7d", "month_to_date", "meter_reading", "min_hourly_usage"],
+)
+async def test_each_volume_sensor_has_a_cubic_metre_twin(hass: HomeAssistant, key: str) -> None:
+    """The m3 twins line Thames Water up with meters that report m3."""
+    raw = _raw()
+    raw["hourly"] = _full_day_hourly()
+    await _setup(hass, _entry(), raw)
+
+    litres = _state(hass, "sensor", key)
+    cubic = _state(hass, "sensor", f"{key}_m3")
+    assert cubic.attributes["unit_of_measurement"] == "m³"
+    assert litres.attributes["unit_of_measurement"] == "L"
+    assert float(cubic.state) == pytest.approx(float(litres.state) / 1000)
+
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{ACCOUNT}_{METER}_{key}_m3")
+    assert registry.async_get(entity_id).options["sensor"]["suggested_display_precision"] == 3
+
+
+async def test_cubic_metre_twins_have_no_value_when_the_litre_sensor_has_none(
+    hass: HomeAssistant,
+) -> None:
+    """The default fixture has no complete day, so minimum hourly usage is unknown."""
+    await _setup(hass, _entry(), _raw())
+
+    assert _state(hass, "sensor", "min_hourly_usage").state == "unknown"
+    assert _state(hass, "sensor", "min_hourly_usage_m3").state == "unknown"
 
 
 async def test_meter_reading_names_its_statistic(hass: HomeAssistant) -> None:
