@@ -5,6 +5,10 @@ SQLite, scheduler, dashboard and SMTP alerts are replaced by Home Assistant itse
 Login and data come from the [`thameswaterapi`](https://pypi.org/project/thameswaterapi/)
 library (direct web API, no browser).
 
+## Versions
+Releases are tagged `v0.<yy>.<m>.<revision>`, for example `v0.26.10.1` is the first release of
+October 2026.
+
 ## Source repositories
 This project builds on two others:
 * [`gavraq/thames-water-service`](https://github.com/gavraq/thames-water-service) - the original
@@ -36,7 +40,7 @@ The domain is `thames_water_meter`, so this can be installed next to
 its own.
 
 ### Upgrading from 0.1.x (domain `thames_water`)
-The domain changed in 0.2.0, so Home Assistant sees a different integration:
+The domain changed in 0.26.10.1, so Home Assistant sees a different integration:
 1. Delete the old **Thames Water Smart Meter** entry, then remove the old
    `config/custom_components/thames_water/` folder.
 2. Install this version and add the integration again.
