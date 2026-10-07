@@ -2,6 +2,29 @@
 # directory, so there is nothing to build or install here. This file only
 # carries the test configuration; dependencies are in requirements_test.txt.
 
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+# Pyflakes, pycodestyle errors, import order, pyupgrade, bugbear.
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Fixtures such as canned login pages are long single lines.
+"tests/*" = ["E501"]
+
+[tool.codespell]
+# `hass` is Home Assistant's name for its instance.
+ignore-words-list = "hass"
+
+[tool.mypy]
+python_version = "3.13"
+files = ["custom_components"]
+# thameswaterapi ships no type information.
+ignore_missing_imports = true
+warn_unused_ignores = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

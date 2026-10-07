@@ -30,3 +30,25 @@ jobs:
       # test_analysis, test_diag and test_structure are import-time scripts,
       # so pytest runs them when it collects them.
       - run: pytest
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      # Home Assistant itself comes with the test requirements, so mypy sees its types.
+      - run: pip install -r requirements_dev.txt
+      - run: mypy
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # gitleaks scans the history, so it needs more than the tip.
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure

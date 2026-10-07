@@ -1,30 +1,47 @@
-import datetime as dt, sys
+import datetime as dt
+import sys
+
 sys.path.insert(0, "custom_components/thames_water_meter")
 import importlib.util
-spec = importlib.util.spec_from_file_location("analysis", "custom_components/thames_water_meter/analysis.py")
-a = importlib.util.module_from_spec(spec); sys.modules['analysis'] = a; spec.loader.exec_module(a)
-from thameswaterapi import Line, meter_usage_lines_to_timeseries, lines_to_timeseries
+
+spec = importlib.util.spec_from_file_location(
+    "analysis", "custom_components/thames_water_meter/analysis.py"
+)
+a = importlib.util.module_from_spec(spec)
+sys.modules["analysis"] = a
+spec.loader.exec_module(a)
+from thameswaterapi import (  # noqa: E402
+    Line,
+    lines_to_timeseries,
+    meter_usage_lines_to_timeseries,
+)
 
 # hourly: end-of-hour reads
 usage = [10, 0, 5, 20, 3]
 reads, r = [], 1000
 for u in usage:
-    r += u; reads.append(r)
-lines = [Line(f"{i}:00", u, rd, False, "X") for i, (u, rd) in enumerate(zip(usage, reads))]
+    r += u
+    reads.append(r)
+lines = [
+    Line(f"{i}:00", u, rd, False, "X") for i, (u, rd) in enumerate(zip(usage, reads, strict=True))
+]
 h = meter_usage_lines_to_timeseries(dt.date(2026, 10, 1), lines)
 assert a.reads_are_start_of_hour(h) is False
 assert a.cumulative_sum(h[2], False) == 1015
 
 # hourly: start-of-hour reads
 reads2 = [1000]
-for u in usage[:-1]: reads2.append(reads2[-1] + u)
-lines2 = [Line(f"{i}:00", u, rd, False, "X") for i, (u, rd) in enumerate(zip(usage, reads2))]
+for u in usage[:-1]:
+    reads2.append(reads2[-1] + u)
+lines2 = [
+    Line(f"{i}:00", u, rd, False, "X") for i, (u, rd) in enumerate(zip(usage, reads2, strict=True))
+]
 h2 = meter_usage_lines_to_timeseries(dt.date(2026, 10, 1), lines2)
 assert a.reads_are_start_of_hour(h2) is True
-assert a.cumulative_sum(h2[0], True) == 1010   # end of hour 0
+assert a.cumulative_sum(h2[0], True) == 1010  # end of hour 0
 # increments between consecutive sums equal each hour's usage
 sums = [a.cumulative_sum(x, True) for x in h2]
-assert [sums[i+1]-sums[i] for i in range(4)] == usage[1:]
+assert [sums[i + 1] - sums[i] for i in range(4)] == usage[1:]
 
 # daily
 today = dt.date(2026, 10, 7)

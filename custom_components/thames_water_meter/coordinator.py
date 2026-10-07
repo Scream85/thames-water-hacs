@@ -2,14 +2,27 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import datetime as dt
 import logging
 import re
+from dataclasses import dataclass, field
 from typing import Any
 
 import requests
+from homeassistant.components.recorder.models import (
+    StatisticData,
+    StatisticMeanType,
+    StatisticMetaData,
+)
+from homeassistant.components.recorder.statistics import async_add_external_statistics
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, UnitOfVolume
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 from thameswaterapi import (
+    LONDON,
     AuthenticationError,
     HourlyMeasurement,
     MalformedResponse,
@@ -20,17 +33,7 @@ from thameswaterapi import (
     ThamesWater,
     lines_to_timeseries,
     meter_usage_lines_to_timeseries,
-    LONDON,
 )
-
-from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
-from homeassistant.components.recorder.statistics import async_add_external_statistics
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, UnitOfVolume
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.util import dt as dt_util
 
 from .analysis import (
     DailyMetrics,
@@ -38,8 +41,8 @@ from .analysis import (
     daily_metrics,
     reads_are_start_of_hour,
 )
-from .diagnostics import describe_response
 from .const import DOMAIN, HOURLY_LOOKBACK_DAYS, UPDATE_INTERVAL
+from .diagnostics import describe_response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -116,9 +119,7 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
         end = dt.datetime.now(LONDON).date()
         start = end - dt.timedelta(days=HOURLY_LOOKBACK_DAYS)
         usage = client.get_meter_usage(meter, start, end, "H")
-        hourly: list[HourlyMeasurement] = meter_usage_lines_to_timeseries(
-            start, usage.Lines
-        )
+        hourly: list[HourlyMeasurement] = meter_usage_lines_to_timeseries(start, usage.Lines)
 
         try:
             tariff = client.get_tariff()
@@ -197,6 +198,7 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             )
         metadata = StatisticMetaData(
             has_mean=False,
+            mean_type=StatisticMeanType.NONE,
             has_sum=True,
             name=f"Thames Water {meter} consumption",
             source=DOMAIN,

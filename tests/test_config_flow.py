@@ -46,9 +46,7 @@ async def test_user_flow_creates_an_entry(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.FORM
 
     with patch(LOGIN, return_value=(ACCOUNT, ["M1"])):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], CREDENTIALS
-        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], CREDENTIALS)
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == CREDENTIALS
@@ -70,9 +68,7 @@ async def test_user_flow_reports_a_failed_login(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     with patch(LOGIN, side_effect=error):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], CREDENTIALS
-        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], CREDENTIALS)
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": reason}
@@ -85,9 +81,7 @@ async def test_user_flow_rejects_an_account_without_a_meter(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     with patch(LOGIN, return_value=(ACCOUNT, [])):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], CREDENTIALS
-        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], CREDENTIALS)
 
     assert result["errors"] == {"base": "no_meter"}
 
@@ -100,9 +94,7 @@ async def test_user_flow_aborts_for_an_account_already_configured(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     with patch(LOGIN, return_value=(ACCOUNT, ["M1"])):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], CREDENTIALS
-        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], CREDENTIALS)
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from html.parser import HTMLParser
 import re
+from html.parser import HTMLParser
 from urllib.parse import urlsplit
 
 _TOKENISH = re.compile(r"[A-Za-z0-9_\-\.=+/]{32,}")
@@ -59,9 +59,7 @@ def describe_response(resp, max_text: int = 500) -> str:
     except Exception:  # noqa: BLE001 - diagnostics must never raise
         pass
     url = urlsplit(resp.url)
-    redirects = " -> ".join(
-        f"{urlsplit(r.url).netloc}{urlsplit(r.url).path}" for r in resp.history
-    )
+    redirects = " -> ".join(f"{urlsplit(r.url).netloc}{urlsplit(r.url).path}" for r in resp.history)
     text = _TOKENISH.sub("<redacted>", " ".join(parser.text))[:max_text]
     return (
         f"final={url.netloc}{url.path} status={resp.status_code} "
