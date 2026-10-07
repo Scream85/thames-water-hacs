@@ -6,8 +6,9 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
 ## Unreleased
 
 ### Added
-- Acknowledgements and an all-contributors table in the README, crediting gavraq and Jelmer
-  Vernooij, with a credit comment for the test fixtures.
+- Acknowledgements and an all-contributors table in the README, crediting gavraq, Jelmer
+  Vernooij and Ayrton Bourn, links to their repositories (including `thameswaterapi`), and a
+  credit comment for the test fixtures.
 
 ## 0.26.10.0 - 2026-10-07
 

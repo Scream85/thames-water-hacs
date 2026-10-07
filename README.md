@@ -20,14 +20,18 @@ For maintainers: set `version` in `manifest.json` to the same string as the tag 
 that does not match the manifest.
 
 ## Source repositories
-This project builds on two others:
+This project builds on these:
 * [`gavraq/thames-water-service`](https://github.com/gavraq/thames-water-service) - the original
   Selenium scraper, API, dashboard and alerts that this integration replaces.
 * [`jelmer/homeassistant-thameswater`](https://github.com/jelmer/homeassistant-thameswater) - the
-  existing Home Assistant integration (Apache-2.0), by the author of the
-  [`thameswaterapi`](https://pypi.org/project/thameswaterapi/) library used here. It is based on
-  earlier work by AyrtonB. This one adds the spike sensor, 7-day average, month-to-date and cost
-  sensors, and uses a single coordinator.
+  existing Home Assistant integration (Apache-2.0). This one adds the spike sensor, 7-day
+  average, month-to-date and cost sensors, and uses a single coordinator. It is based on earlier
+  work by AyrtonB.
+* [`jelmer/thameswaterapi`](https://github.com/jelmer/thameswaterapi) - the Thames Water API
+  client behind the [`thameswaterapi`](https://pypi.org/project/thameswaterapi/) package that
+  this integration uses for login and data.
+* [`AyrtonB/Thames-Water`](https://github.com/AyrtonB/Thames-Water) - the earlier Thames Water
+  API client that the two above build on.
 
 ## Acknowledgements
 * **gavraq** - the original Thames Water monitoring service, whose features this integration
@@ -35,6 +39,8 @@ This project builds on two others:
 * **Jelmer Vernooij** - the `thameswaterapi` library that does the login and data fetching, and
   the existing integration whose approach to hourly statistics and test setup this follows. The
   test fixtures in `tests/conftest.py` follow the pattern in his repository.
+* **Ayrton Bourn** - the first Thames Water API client and Home Assistant work that the library
+  and integration above grew from.
 
 ## Contributors
 Thanks to everyone below ([emoji key](https://allcontributors.org/docs/en/emoji-key)). Add
@@ -51,6 +57,7 @@ on this repository.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Scream85"><img src="https://avatars.githubusercontent.com/u/29313645?v=4?s=100" width="100px;" alt="Scream85"/><br /><sub><b>Scream85</b></sub></a><br /><a href="https://github.com/Scream85/thames-water-hacs/commits?author=Scream85" title="Code">💻</a> <a href="https://github.com/Scream85/thames-water-hacs/commits?author=Scream85" title="Tests">⚠️</a> <a href="https://github.com/Scream85/thames-water-hacs/commits?author=Scream85" title="Documentation">📖</a> <a href="#infra-Scream85" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/gavraq"><img src="https://avatars.githubusercontent.com/u/59359644?v=4?s=100" width="100px;" alt="gavraq"/><br /><sub><b>gavraq</b></sub></a><br /><a href="https://github.com/Scream85/thames-water-hacs/commits?author=gavraq" title="Code">💻</a> <a href="#ideas-gavraq" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jelmer"><img src="https://avatars.githubusercontent.com/u/49032?v=4?s=100" width="100px;" alt="Jelmer Vernooij"/><br /><sub><b>Jelmer Vernooij</b></sub></a><br /><a href="#tool-jelmer" title="Tools">🔧</a> <a href="#ideas-jelmer" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/AyrtonB"><img src="https://avatars.githubusercontent.com/u/29051639?v=4?s=100" width="100px;" alt="Ayrton Bourn"/><br /><sub><b>Ayrton Bourn</b></sub></a><br /><a href="#tool-AyrtonB" title="Tools">🔧</a> <a href="#ideas-AyrtonB" title="Ideas, Planning, & Feedback">🤔</a></td>
     </tr>
   </tbody>
 </table>
