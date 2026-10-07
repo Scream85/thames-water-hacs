@@ -76,6 +76,18 @@ def minimum_hourly_usage(hours: list[Any]) -> HourlyMinimum | None:
     return HourlyMinimum(date=day, usage=float(quietest.usage), hour=quietest.hour_start.hour)
 
 
+def merge_hourly(*windows: list[Any]) -> list[Any]:
+    """Join hourly windows into one list, oldest first, one row per hour.
+
+    Where windows overlap, a row from a later window wins, so the freshest figure is kept.
+    """
+    by_hour: dict[Any, Any] = {}
+    for window in windows:
+        for row in window:
+            by_hour[row.hour_start] = row
+    return [by_hour[hour] for hour in sorted(by_hour)]
+
+
 def reads_are_start_of_hour(hours: list[Any]) -> bool:
     """Work out whether `total` is the meter read at the start or end of the hour.
 

@@ -40,10 +40,11 @@ from .analysis import (
     HourlyMinimum,
     cumulative_sum,
     daily_metrics,
+    merge_hourly,
     minimum_hourly_usage,
     reads_are_start_of_hour,
 )
-from .const import DOMAIN, HOURLY_LOOKBACK_DAYS, UPDATE_INTERVAL
+from .const import DOMAIN, HOURLY_BACKFILL_DAYS, HOURLY_RECENT_DAYS, UPDATE_INTERVAL
 from .diagnostics import describe_response
 
 _LOGGER = logging.getLogger(__name__)
@@ -93,6 +94,16 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             update_interval=UPDATE_INTERVAL,
         )
         self._tariff: Tariff | None = None
+        # The older history is fetched once per start-up. Statistics are keyed by
+        # hour and anchored to the meter read, so importing it again is harmless.
+        self._backfilled = False
+
+    @staticmethod
+    def _hourly(
+        client: ThamesWater, meter: str, start: dt.date, end: dt.date
+    ) -> list[HourlyMeasurement]:
+        usage = client.get_meter_usage(meter, start, end, "H")
+        return meter_usage_lines_to_timeseries(start, usage.Lines)
 
     # ---- blocking part, runs in the executor -------------------------------
     def _fetch(self) -> dict[str, Any]:
@@ -120,9 +131,19 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
         daily: list[Measurement] = lines_to_timeseries(meters.Lines)
 
         end = dt.datetime.now(LONDON).date()
-        start = end - dt.timedelta(days=HOURLY_LOOKBACK_DAYS)
-        usage = client.get_meter_usage(meter, start, end, "H")
-        hourly: list[HourlyMeasurement] = meter_usage_lines_to_timeseries(start, usage.Lines)
+        recent_start = end - dt.timedelta(days=HOURLY_RECENT_DAYS)
+        hourly = self._hourly(client, meter, recent_start, end)
+
+        if not self._backfilled:
+            older_start = end - dt.timedelta(days=HOURLY_BACKFILL_DAYS)
+            try:
+                older = self._hourly(client, meter, older_start, recent_start)
+            except (requests.RequestException, MalformedResponse, RateLimitError) as err:
+                # The recent window is what matters. Try the history again next time.
+                _LOGGER.debug("Older hourly history not fetched yet: %s", err)
+            else:
+                hourly = merge_hourly(older, hourly)
+                self._backfilled = True
 
         try:
             tariff = client.get_tariff()

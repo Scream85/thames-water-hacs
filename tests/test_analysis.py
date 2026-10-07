@@ -75,4 +75,14 @@ assert a.minimum_hourly_usage(_day(5, 10, 1)) is None
 assert a.minimum_hourly_usage([]) is None
 # a clock-change day has 23 hours and still counts
 assert a.minimum_hourly_usage(_day(5, 23, 7)).hour == 7
+# merging windows: one row per hour, oldest first, a later window wins on overlap
+older = [N(hour_start=dt.datetime(2026, 9, 1, 0, tzinfo=dt.UTC), usage=1)]
+older.append(N(hour_start=dt.datetime(2026, 9, 1, 1, tzinfo=dt.UTC), usage=2))
+recent = [N(hour_start=dt.datetime(2026, 9, 1, 1, tzinfo=dt.UTC), usage=20)]
+recent.append(N(hour_start=dt.datetime(2026, 9, 1, 2, tzinfo=dt.UTC), usage=30))
+merged = a.merge_hourly(recent, older)  # argument order must not decide the sort
+assert [m.usage for m in merged] == [1, 2, 30], merged  # later argument (older) wins on overlap
+merged = a.merge_hourly(older, recent)
+assert [m.usage for m in merged] == [1, 20, 30], merged
+assert a.merge_hourly([], []) == []
 print("all good")

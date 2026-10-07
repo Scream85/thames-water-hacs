@@ -37,7 +37,7 @@ analysis = importlib.util.module_from_spec(spec)
 sys.modules["analysis"] = analysis
 spec.loader.exec_module(analysis)
 
-WINDOWS_DAYS = (7, 14, 30)
+WINDOWS_DAYS = (30, 60, 90, 180, 365)
 PAUSE_SECONDS = 3
 
 
@@ -102,19 +102,24 @@ def main() -> int:
             usage = client.get_meter_usage(meter, start, end, "H")
             hourly = meter_usage_lines_to_timeseries(start, usage.Lines)
         except Exception as err:  # noqa: BLE001 - report and carry on
-            print(f"{days:>2} days: FAILED {type(err).__name__}: {str(err)[:150]}")
+            print(f"{days:>3} days: FAILED {type(err).__name__}: {str(err)[:150]}")
             continue
         real = [h for h in hourly if h.total > 0]
         hourly_by_window[days] = sorted(real, key=lambda h: h.hour_start)
         if real:
             hours = hourly_by_window[days]
+            # If the first row is later than the requested start, the API ran out of
+            # history (or the meter was installed later) rather than serving the window.
+            short = (hours[0].hour_start.date() - start).days
             print(
-                f"{days:>2} days: {len(hourly)} rows, {len(real)} with a meter read, "
-                f"{hours[0].hour_start.isoformat()} .. {hours[-1].hour_start.isoformat()}, "
+                f"{days:>3} days (from {start}): {len(hourly)} rows, {len(real)} with a "
+                f"meter read, {hours[0].hour_start.isoformat()} .. "
+                f"{hours[-1].hour_start.isoformat()}, "
                 f"{len({h.hour_start.date() for h in hours})} distinct days"
+                + (f", FIRST ROW IS {short} DAYS AFTER THE REQUESTED START" if short > 0 else "")
             )
         else:
-            print(f"{days:>2} days: {len(hourly)} rows, none with a meter read")
+            print(f"{days:>3} days: {len(hourly)} rows, none with a meter read")
         time.sleep(PAUSE_SECONDS)
 
     if not hourly_by_window:

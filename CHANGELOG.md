@@ -9,6 +9,12 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
 - Litre sensors show whole litres (`345 L`, not `345.0 L`), as Thames Water reports whole
   litres.
 
+- Hourly history is no longer limited to 7 days. Each refresh fetches the last 30 days, and on
+  the first refresh after start-up the older history up to 90 days is imported as well, so a new
+  install fills the Energy dashboard with about three months. The older history is requested
+  separately because the wider windows ended a day earlier than the 30-day one. If that request
+  fails the recent data is still imported and the history is tried again next time.
+
 ### Added
 - Cubic metre (m³) twins of the five volume sensors (latest day, 7-day average, month-to-date,
   meter reading and minimum hourly usage), with three decimals, for lining Thames Water up with

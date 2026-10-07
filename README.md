@@ -121,10 +121,13 @@ Replace the old email alerts with an automation on the `Usage spike` binary sens
 calling any `notify.*` action.
 
 ## Known limits / things to verify
-* Only ~7 days of hourly data exist at Thames Water, so history before install can't be backfilled
-  beyond that. Daily history from your old SQLite DB can't be imported as hourly statistics.
-* Assumes the API's usage and meter-read values are litres (consistent with the original
-  service). Check the `Meter reading` attribute `read_taken_at` and compare with your bill/meter.
+* On first start the integration imports about 90 days of hourly history into the Energy
+  dashboard statistic, which is as much as Thames Water serves (checked against a real account
+  in October 2026: 90 days worked, 180 and 365 returned nothing). Older history, such as daily
+  figures from an old SQLite database, can't be imported as hourly statistics.
+* Usage and meter-read values are litres, confirmed against a real account: hourly and daily
+  figures agree, and the meter read is taken at the end of each hour. The `Meter reading`
+  attribute `read_taken_at` shows which the integration detected.
 * First meter on the default contract account is used.
 * Not tested against a live HA instance in the build environment: install on a test instance
   first and watch Settings -> System -> Logs for `thames_water_meter`.
