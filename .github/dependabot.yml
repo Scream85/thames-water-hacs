@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Keeps the workflow actions current, which would have caught the Node 20
+  # deprecation warnings before GitHub started printing them.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  # requirements_test.txt pins pytest-homeassistant-custom-component, which
+  # decides the Home Assistant version the tests run against.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
