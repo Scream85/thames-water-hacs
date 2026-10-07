@@ -9,6 +9,16 @@ library (direct web API, no browser).
 Releases are tagged `v0.<yy>.<m>.<revision>`, with the revision counting from 0. For example,
 `v0.26.10.0` is the first release of October 2026 and `v0.26.10.1` the second.
 
+### Beta versions
+Betas are GitHub pre-releases tagged with a PEP 440 suffix, for example `v0.26.10.1b1`. HACS
+hides them by default. To try one: HACS -> **Thames Water Smart Meter** -> three dots ->
+**Redownload** -> switch on **Show beta versions** -> pick the beta. Switching it off returns you
+to the latest stable release on the next update.
+
+For maintainers: set `version` in `manifest.json` to the same string as the tag (without the
+`v`), push the tag, and `.github/workflows/release.yml` publishes the release. It refuses a tag
+that does not match the manifest.
+
 ## Source repositories
 This project builds on two others:
 * [`gavraq/thames-water-service`](https://github.com/gavraq/thames-water-service) - the original
