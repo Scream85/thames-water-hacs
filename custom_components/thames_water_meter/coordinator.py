@@ -19,6 +19,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, UnitOfVolume
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 from thameswaterapi import (
@@ -43,11 +44,19 @@ from .analysis import (
     merge_hourly,
     minimum_hourly_usage,
     reads_are_start_of_hour,
+    tariff_in_force,
 )
 from .const import DOMAIN, HOURLY_BACKFILL_DAYS, HOURLY_RECENT_DAYS, UPDATE_INTERVAL
 from .diagnostics import describe_response
 
 _LOGGER = logging.getLogger(__name__)
+
+TARIFF_STORAGE_VERSION = 1
+
+
+def tariff_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
+    """Where the last known tariff is kept between restarts."""
+    return Store(hass, TARIFF_STORAGE_VERSION, f"{DOMAIN}.tariff.{entry_id}")
 
 
 class _DiagClient(ThamesWater):
@@ -94,6 +103,8 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             update_interval=UPDATE_INTERVAL,
         )
         self._tariff: Tariff | None = None
+        self._tariff_store = tariff_store(hass, entry.entry_id)
+        self._saved_tariff: dict[str, Any] | None = None
         # The older history is fetched once per start-up. Statistics are keyed by
         # hour and anchored to the meter read, so importing it again is harmless.
         self._backfilled = False
@@ -174,6 +185,11 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
 
         if raw["tariff"] is not None:
             self._tariff = raw["tariff"]
+            await self._async_save_tariff(raw["tariff"])
+        elif self._tariff is None:
+            # The tariff page could not be read and nothing is held in memory, which is
+            # the case after a restart. Fall back to the last figures that were saved.
+            self._tariff = await self._async_restore_tariff()
 
         # Drop placeholder rows (no meter read yet) so sums never fall back to 0.
         hourly: list[HourlyMeasurement] = sorted(
@@ -196,6 +212,41 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             read_is_start_of_hour=start_of_hour,
             hourly_minimum=minimum_hourly_usage(hourly),
         )
+
+    async def _async_save_tariff(self, tariff: Tariff) -> None:
+        """Keep the tariff for the next start, writing only when it has changed."""
+        payload = {
+            "clean_water_rate_per_m3": tariff.clean_water_rate_per_m3,
+            "wastewater_rate_per_m3": tariff.wastewater_rate_per_m3,
+            "water_fixed_per_year": tariff.water_fixed_per_year,
+            "wastewater_fixed_per_year": tariff.wastewater_fixed_per_year,
+            "effective_date": tariff.effective_date.isoformat(),
+        }
+        if payload != self._saved_tariff:
+            await self._tariff_store.async_save(payload)
+            self._saved_tariff = payload
+
+    async def _async_restore_tariff(self) -> Tariff | None:
+        """The last saved tariff, unless its charging year has ended or it is unreadable."""
+        stored = await self._tariff_store.async_load()
+        if not stored:
+            return None
+        try:
+            tariff = Tariff(
+                clean_water_rate_per_m3=float(stored["clean_water_rate_per_m3"]),
+                wastewater_rate_per_m3=float(stored["wastewater_rate_per_m3"]),
+                water_fixed_per_year=float(stored["water_fixed_per_year"]),
+                wastewater_fixed_per_year=float(stored["wastewater_fixed_per_year"]),
+                effective_date=dt.date.fromisoformat(stored["effective_date"]),
+            )
+        except (KeyError, TypeError, ValueError):
+            _LOGGER.debug("Ignoring an unreadable saved tariff")
+            return None
+        if not tariff_in_force(tariff.effective_date, dt_util.now().date()):
+            _LOGGER.debug("Ignoring the saved tariff, its charging year has ended")
+            return None
+        self._saved_tariff = stored
+        return tariff
 
     def _import_statistics(
         self,

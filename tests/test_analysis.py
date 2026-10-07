@@ -75,6 +75,12 @@ assert a.minimum_hourly_usage(_day(5, 10, 1)) is None
 assert a.minimum_hourly_usage([]) is None
 # a clock-change day has 23 hours and still counts
 assert a.minimum_hourly_usage(_day(5, 23, 7)).hour == 7
+# tariff figures last a charging year, 1 April to 31 March
+assert a.tariff_in_force(dt.date(2026, 4, 1), dt.date(2027, 3, 31))
+assert not a.tariff_in_force(dt.date(2026, 4, 1), dt.date(2027, 4, 1))
+assert a.tariff_in_force(dt.date(2026, 2, 1), dt.date(2026, 3, 31))  # still the 2025 year
+assert not a.tariff_in_force(dt.date(2026, 2, 1), dt.date(2026, 4, 1))
+assert a.tariff_in_force(dt.date(2026, 10, 7), dt.date(2026, 10, 7))
 # merging windows: one row per hour, oldest first, a later window wins on overlap
 older = [N(hour_start=dt.datetime(2026, 9, 1, 0, tzinfo=dt.UTC), usage=1)]
 older.append(N(hour_start=dt.datetime(2026, 9, 1, 1, tzinfo=dt.UTC), usage=2))

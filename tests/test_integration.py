@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-from thameswaterapi import AuthenticationError
+from thameswaterapi import AuthenticationError, Tariff
 
 from custom_components.thames_water_meter.const import CONF_SPIKE_THRESHOLD, DOMAIN
 from custom_components.thames_water_meter.coordinator import ThamesWaterCoordinator
@@ -27,6 +27,21 @@ STATS = "custom_components.thames_water_meter.coordinator.async_add_external_sta
 UTC = dt.UTC
 
 
+def _charging_year_start(today: dt.date) -> dt.date:
+    return dt.date(today.year if today.month >= 4 else today.year - 1, 4, 1)
+
+
+# Unit rate (1.5 + 2.5) / 1000 = 0.004 GBP/L and standing charge (100 + 82.5) / 365 = 0.5 GBP/day,
+# taking effect on the first day of the current charging year so it is always in force.
+TARIFF = Tariff(
+    clean_water_rate_per_m3=1.5,
+    wastewater_rate_per_m3=2.5,
+    water_fixed_per_year=100.0,
+    wastewater_fixed_per_year=82.5,
+    effective_date=_charging_year_start(dt_util.now().date()),
+)
+
+
 def _raw(daily_days=range(1, 5), tariff=True) -> dict:
     """What `_fetch` returns: four October days and three hours, end-of-hour reads."""
     return {
@@ -37,11 +52,7 @@ def _raw(daily_days=range(1, 5), tariff=True) -> dict:
             SimpleNamespace(hour_start=dt.datetime(2026, 10, 4, h, tzinfo=UTC), usage=u, total=t)
             for h, u, t in ((0, 10, 1010), (1, 0, 1010), (2, 5, 1015))
         ],
-        "tariff": (
-            SimpleNamespace(unit_rate_per_litre=0.004, standing_charge_per_day=0.5)
-            if tariff
-            else None
-        ),
+        "tariff": TARIFF if tariff else None,
     }
 
 
@@ -200,6 +211,98 @@ async def test_cost_sensors_have_no_value_without_a_tariff(
     assert _state(hass, "sensor", "latest_day_cost").state == "unknown"
     assert _state(hass, "sensor", "month_to_date_cost").state == "unknown"
     assert float(_state(hass, "sensor", "latest_day_usage").state) == 104
+
+
+def _tariff_key(entry: MockConfigEntry) -> str:
+    return f"{DOMAIN}.tariff.{entry.entry_id}"
+
+
+def _saved_tariff(effective_date: dt.date) -> dict:
+    """What the integration stores, wrapped the way a Store file is."""
+    return {
+        "clean_water_rate_per_m3": 1.5,
+        "wastewater_rate_per_m3": 2.5,
+        "water_fixed_per_year": 100.0,
+        "wastewater_fixed_per_year": 82.5,
+        "effective_date": effective_date.isoformat(),
+    }
+
+
+def _preload(hass_storage: dict, entry: MockConfigEntry, data: dict) -> None:
+    key = _tariff_key(entry)
+    hass_storage[key] = {"version": 1, "minor_version": 1, "key": key, "data": data}
+
+
+async def test_a_fetched_tariff_is_saved_for_the_next_start(
+    hass: HomeAssistant, hass_storage: dict
+) -> None:
+    entry = _entry()
+    await _setup(hass, entry, _raw())
+
+    assert hass_storage[_tariff_key(entry)]["data"] == _saved_tariff(TARIFF.effective_date)
+
+
+async def test_the_saved_tariff_is_used_when_the_tariff_page_cannot_be_read(
+    hass: HomeAssistant, hass_storage: dict
+) -> None:
+    """After a restart nothing is in memory, so cost sensors would be unknown until the
+    next successful tariff fetch without this."""
+    entry = _entry()
+    _preload(hass_storage, entry, _saved_tariff(TARIFF.effective_date))
+    await _setup(hass, entry, _raw(tariff=False))
+
+    assert float(_state(hass, "sensor", "latest_day_cost").state) == pytest.approx(0.92)
+    assert float(_state(hass, "sensor", "month_to_date_cost").state) == pytest.approx(3.64)
+
+
+@pytest.mark.parametrize(
+    "saved",
+    [
+        _saved_tariff(dt.date(2020, 4, 1)),  # its charging year ended long ago
+        {"clean_water_rate_per_m3": "not a number"},  # unreadable
+        {**_saved_tariff(TARIFF.effective_date), "effective_date": "April"},  # bad date
+    ],
+    ids=["lapsed", "unreadable", "bad-date"],
+)
+async def test_a_lapsed_or_unreadable_saved_tariff_is_ignored(
+    hass: HomeAssistant, hass_storage: dict, saved: dict
+) -> None:
+    entry = _entry()
+    _preload(hass_storage, entry, saved)
+    await _setup(hass, entry, _raw(tariff=False))
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert _state(hass, "sensor", "latest_day_cost").state == "unknown"
+
+
+async def test_an_unchanged_tariff_is_not_written_again_on_every_refresh(
+    hass: HomeAssistant, hass_storage: dict
+) -> None:
+    entry = _entry()
+    await _setup(hass, entry, _raw())
+
+    with (
+        patch.object(*FETCH, return_value=_raw()),
+        patch(STATS),
+        patch("homeassistant.helpers.storage.Store.async_save") as save,
+    ):
+        await entry.runtime_data.async_refresh()
+        await entry.runtime_data.async_refresh()
+
+    save.assert_not_called()
+
+
+async def test_removing_the_entry_deletes_the_saved_tariff(
+    hass: HomeAssistant, hass_storage: dict
+) -> None:
+    entry = _entry()
+    await _setup(hass, entry, _raw())
+    assert _tariff_key(entry) in hass_storage
+
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert _tariff_key(entry) not in hass_storage
 
 
 async def test_hourly_statistics_are_imported_at_their_real_times(

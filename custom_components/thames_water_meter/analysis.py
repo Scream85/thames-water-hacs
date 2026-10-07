@@ -76,6 +76,16 @@ def minimum_hourly_usage(hours: list[Any]) -> HourlyMinimum | None:
     return HourlyMinimum(date=day, usage=float(quietest.usage), hour=quietest.hour_start.hour)
 
 
+def tariff_in_force(effective: dt.date, today: dt.date) -> bool:
+    """Whether charges that took effect on `effective` still apply on `today`.
+
+    A charging year runs from 1 April to 31 March, so figures lapse on the first 1 April
+    after the charging year they started in.
+    """
+    start_year = effective.year if effective.month >= 4 else effective.year - 1
+    return today < dt.date(start_year + 1, 4, 1)
+
+
 def merge_hourly(*windows: list[Any]) -> list[Any]:
     """Join hourly windows into one list, oldest first, one row per hour.
 

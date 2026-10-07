@@ -6,7 +6,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .coordinator import ThamesWaterConfigEntry, ThamesWaterCoordinator
+from .coordinator import ThamesWaterConfigEntry, ThamesWaterCoordinator, tariff_store
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
@@ -27,3 +27,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ThamesWaterConfigEntry) 
 async def async_unload_entry(hass: HomeAssistant, entry: ThamesWaterConfigEntry) -> bool:
     """Unload a config entry."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ThamesWaterConfigEntry) -> None:
+    """Delete what was saved for this entry when it is removed."""
+    await tariff_store(hass, entry.entry_id).async_remove()
