@@ -1,4 +1,9 @@
-"""Fixtures for the Thames Water integration tests."""
+"""Fixtures for the Thames Water integration tests.
+
+The two autouse fixtures follow the pattern in jelmer/homeassistant-thameswater
+(Apache-2.0), tests/conftest.py: enable custom integrations, and stand in for the
+recorder the manifest depends on.
+"""
 
 from __future__ import annotations
 
