@@ -3,10 +3,11 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
-## 0.26.10.1b4 - 2026-10-07 (beta)
+## 0.26.10.1 - 2026-10-07
 
-Offered by HACS only with "Show beta versions" switched on for this repository. The earlier
-betas `0.26.10.1b1` to `0.26.10.1b3` were removed, and their changes are listed below.
+The first stable release since the domain change. It includes everything from the betas
+`0.26.10.1b1` to `0.26.10.1b4`, which were removed and are listed below. Home Assistant 2026.3
+or newer shows the integration icon, and needs a full restart after an update to notice it.
 
 ### Added
 - A cost statistic, `thames_water_meter:<meter>_water_cost` (GBP, one value per hour), so the
