@@ -1,5 +1,5 @@
 {
-  "domain": "thames_water",
+  "domain": "thames_water_meter",
   "name": "Thames Water Smart Meter",
   "codeowners": [
     "@Scream85"

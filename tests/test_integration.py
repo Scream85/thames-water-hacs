@@ -14,13 +14,13 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from thameswaterapi import AuthenticationError
 
-from custom_components.thames_water.const import CONF_SPIKE_THRESHOLD, DOMAIN
-from custom_components.thames_water.coordinator import ThamesWaterCoordinator
+from custom_components.thames_water_meter.const import CONF_SPIKE_THRESHOLD, DOMAIN
+from custom_components.thames_water_meter.coordinator import ThamesWaterCoordinator
 
 ACCOUNT = 12345678
 METER = "M1"
 FETCH = ThamesWaterCoordinator, "_fetch"
-STATS = "custom_components.thames_water.coordinator.async_add_external_statistics"
+STATS = "custom_components.thames_water_meter.coordinator.async_add_external_statistics"
 
 UTC = dt.timezone.utc
 
@@ -94,7 +94,7 @@ async def test_meter_reading_names_its_statistic(hass: HomeAssistant) -> None:
     await _setup(hass, _entry(), _raw())
 
     attrs = _state(hass, "sensor", "meter_reading").attributes
-    assert attrs["statistic_id"] == "thames_water:m1_water_consumption"
+    assert attrs["statistic_id"] == "thames_water_meter:m1_water_consumption"
     assert attrs["read_taken_at"] == "end of hour"
 
 
@@ -134,7 +134,7 @@ async def test_hourly_statistics_are_imported_at_their_real_times(
 
     add_stats.assert_called_once()
     _hass, metadata, stats = add_stats.call_args.args
-    assert metadata["statistic_id"] == "thames_water:m1_water_consumption"
+    assert metadata["statistic_id"] == "thames_water_meter:m1_water_consumption"
     assert metadata["has_sum"] is True
     assert metadata["unit_of_measurement"] == "L"
     assert [s["start"].hour for s in stats] == [0, 1, 2]

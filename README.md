@@ -13,11 +13,25 @@ library (direct web API, no browser).
 3. Settings -> Devices & services -> Add integration -> Thames Water Smart Meter.
 
 ### Manual
-1. Copy `custom_components/thames_water/` into your HA `config/custom_components/`
+1. Copy `custom_components/thames_water_meter/` into your HA `config/custom_components/`
    (or add this folder as a HACS custom repository).
 2. Restart Home Assistant (requires 2025.8+).
 3. Settings -> Devices & services -> Add integration -> **Thames Water Smart Meter**.
 4. Enter your Thames Water email and password.
+
+## Running alongside other Thames Water integrations
+The domain is `thames_water_meter`, so this can be installed next to
+[`jelmer/homeassistant-thameswater`](https://github.com/jelmer/homeassistant-thameswater)
+(domain `thames_water`). Entities and statistics are separate, and each integration logs in on
+its own.
+
+### Upgrading from 0.1.x (domain `thames_water`)
+The domain changed in 0.2.0, so Home Assistant sees a different integration:
+1. Delete the old **Thames Water Smart Meter** entry, then remove the old
+   `config/custom_components/thames_water/` folder.
+2. Install this version and add the integration again.
+3. Pick the new statistic (`thames_water_meter:<meter>_water_consumption`) in the Energy
+   dashboard. The old statistic keeps its history under its old name and can be left in place.
 
 ## What you get
 | Entity | Notes |
@@ -46,4 +60,4 @@ calling any `notify.*` action.
   service). Check the `Meter reading` attribute `read_taken_at` and compare with your bill/meter.
 * First meter on the default contract account is used.
 * Not tested against a live HA instance in the build environment: install on a test instance
-  first and watch Settings -> System -> Logs for `thames_water`.
+  first and watch Settings -> System -> Logs for `thames_water_meter`.

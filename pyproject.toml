@@ -1,4 +1,4 @@
-# Home Assistant copies `custom_components/thames_water` into a config
+# Home Assistant copies `custom_components/thames_water_meter` into a config
 # directory, so there is nothing to build or install here. This file only
 # carries the test configuration; dependencies are in requirements_test.txt.
 
