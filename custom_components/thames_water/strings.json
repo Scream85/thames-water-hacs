@@ -19,6 +19,7 @@
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_account%]",
+      "wrong_account": "Those credentials belong to a different Thames Water account",
       "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
     }
   },

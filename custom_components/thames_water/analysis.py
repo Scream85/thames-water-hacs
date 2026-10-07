@@ -16,22 +16,31 @@ class DailyMetrics:
     avg_7d: float | None
     month_to_date: float | None
     month_days: int
+    month: str | None = None
 
 
-def daily_metrics(daily: list[Any], today: dt.date) -> DailyMetrics:
-    """Compute headline figures from Measurement-like objects (start, usage)."""
+def daily_metrics(daily: list[Any]) -> DailyMetrics:
+    """Compute headline figures from Measurement-like objects (start, usage).
+
+    The data lags by about three days, so "month to date" is the month of the
+    latest data point, not the calendar month. Otherwise it would read 0 for the
+    first days of every month.
+    """
     if not daily:
         return DailyMetrics(None, None, None, None, 0)
     daily = sorted(daily, key=lambda m: m.start)
     latest = daily[-1]
     last7 = daily[-7:]
-    month = [m for m in daily if (m.start.year, m.start.month) == (today.year, today.month)]
+    month = [
+        m for m in daily if (m.start.year, m.start.month) == (latest.start.year, latest.start.month)
+    ]
     return DailyMetrics(
         latest_date=latest.start,
         latest_usage=float(latest.usage),
         avg_7d=sum(m.usage for m in last7) / len(last7),
-        month_to_date=float(sum(m.usage for m in month)) if month else 0.0,
+        month_to_date=float(sum(m.usage for m in month)),
         month_days=len(month),
+        month=f"{latest.start.year:04d}-{latest.start.month:02d}",
     )
 
 

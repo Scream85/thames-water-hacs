@@ -24,6 +24,7 @@
     },
     "abort": {
       "already_configured": "Account is already configured",
+      "wrong_account": "Those credentials belong to a different Thames Water account",
       "reauth_successful": "Re-authentication was successful"
     }
   },

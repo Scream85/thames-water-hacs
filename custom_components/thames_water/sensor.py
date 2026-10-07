@@ -69,6 +69,7 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
         device_class=SensorDeviceClass.WATER,
         native_unit_of_measurement=UnitOfVolume.LITERS,
         value_fn=lambda d: d.daily.month_to_date,
+        attrs_fn=lambda d: {"month": d.daily.month, "days": d.daily.month_days},
     ),
     ThamesWaterSensorDescription(
         key="meter_reading",
@@ -97,6 +98,7 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
         native_unit_of_measurement="GBP",
         suggested_display_precision=2,
         value_fn=_month_cost,
+        attrs_fn=lambda d: {"month": d.daily.month, "days": d.daily.month_days},
     ),
 )
 
