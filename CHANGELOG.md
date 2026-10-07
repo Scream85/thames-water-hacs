@@ -3,7 +3,10 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
-## Unreleased
+## 0.26.10.1b4 - 2026-10-07 (beta)
+
+Offered by HACS only with "Show beta versions" switched on for this repository. The earlier
+betas `0.26.10.1b1` to `0.26.10.1b3` were removed, and their changes are listed below.
 
 ### Added
 - A cost statistic, `thames_water_meter:<meter>_water_cost` (GBP, one value per hour), so the
