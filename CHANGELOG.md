@@ -19,7 +19,12 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
 - Re-authenticating accepted credentials for any Thames Water account. It now aborts with
   `wrong_account` unless they belong to the configured one.
 
+- The imported statistic now sets `mean_type`, which newer Home Assistant versions require and
+  would otherwise warn about, then reject.
+
 ### Added
+- Pre-commit hooks (ruff lint and format, codespell, actionlint, gitleaks and the standard file
+  checks) and a mypy job, both run in CI.
 - Home Assistant tests for the config, reauth and options flows, entity values, statistics
   import and setup failures, run in CI.
 - Tag-driven release workflow. Beta tags (for example `v0.26.10.1b1`) become pre-releases that

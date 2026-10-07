@@ -2,19 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 import requests
 import voluptuous as vol
-from thameswaterapi import (
-    AuthenticationError,
-    MalformedResponse,
-    RateLimitError,
-    ThamesWater,
-)
-
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
@@ -22,6 +15,12 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import callback
+from thameswaterapi import (
+    AuthenticationError,
+    MalformedResponse,
+    RateLimitError,
+    ThamesWater,
+)
 
 from .const import (
     CONF_SPIKE_THRESHOLD,
@@ -31,9 +30,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-USER_SCHEMA = vol.Schema(
-    {vol.Required(CONF_EMAIL): str, vol.Required(CONF_PASSWORD): str}
-)
+USER_SCHEMA = vol.Schema({vol.Required(CONF_EMAIL): str, vol.Required(CONF_PASSWORD): str})
 
 
 def _login(email: str, password: str) -> tuple[int, list[str]]:
@@ -64,14 +61,10 @@ class ThamesWaterConfigFlow(ConfigFlow, domain=DOMAIN):
             return None, "no_meter"
         return result, None
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
-            result, error = await self._try(
-                user_input[CONF_EMAIL], user_input[CONF_PASSWORD]
-            )
+            result, error = await self._try(user_input[CONF_EMAIL], user_input[CONF_PASSWORD])
             if error:
                 errors["base"] = error
             else:
@@ -88,9 +81,7 @@ class ThamesWaterConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reauth(
-        self, entry_data: Mapping[str, Any]
-    ) -> ConfigFlowResult:
+    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
@@ -99,9 +90,7 @@ class ThamesWaterConfigFlow(ConfigFlow, domain=DOMAIN):
         entry = self._get_reauth_entry()
         errors: dict[str, str] = {}
         if user_input is not None:
-            result, error = await self._try(
-                entry.data[CONF_EMAIL], user_input[CONF_PASSWORD]
-            )
+            result, error = await self._try(entry.data[CONF_EMAIL], user_input[CONF_PASSWORD])
             if error:
                 errors["base"] = error
             else:
@@ -126,14 +115,10 @@ class ThamesWaterConfigFlow(ConfigFlow, domain=DOMAIN):
 class ThamesWaterOptionsFlow(OptionsFlowWithReload):
     """Options: daily spike threshold."""
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=user_input)
-        current = self.config_entry.options.get(
-            CONF_SPIKE_THRESHOLD, DEFAULT_SPIKE_THRESHOLD
-        )
+        current = self.config_entry.options.get(CONF_SPIKE_THRESHOLD, DEFAULT_SPIKE_THRESHOLD)
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(

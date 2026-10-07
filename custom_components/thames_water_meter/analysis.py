@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import datetime as dt
+from dataclasses import dataclass
+from itertools import pairwise
 from typing import Any
 
 
@@ -51,7 +52,7 @@ def reads_are_start_of_hour(hours: list[Any]) -> bool:
     hour; if it equals usage[i] it is taken at the start. Defaults to "end".
     """
     end_hits = start_hits = 0
-    for a, b in zip(hours, hours[1:]):
+    for a, b in pairwise(hours):
         delta = b.total - a.total
         if delta == b.usage:
             end_hits += 1

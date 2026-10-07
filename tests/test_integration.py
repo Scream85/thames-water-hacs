@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytest
 import requests
+from homeassistant.components.recorder.models import StatisticMeanType
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -22,7 +23,7 @@ METER = "M1"
 FETCH = ThamesWaterCoordinator, "_fetch"
 STATS = "custom_components.thames_water_meter.coordinator.async_add_external_statistics"
 
-UTC = dt.timezone.utc
+UTC = dt.UTC
 
 
 def _raw(daily_days=range(1, 5), tariff=True) -> dict:
@@ -30,14 +31,9 @@ def _raw(daily_days=range(1, 5), tariff=True) -> dict:
     return {
         "account": ACCOUNT,
         "meter": METER,
-        "daily": [
-            SimpleNamespace(start=dt.date(2026, 10, d), usage=100 + d)
-            for d in daily_days
-        ],
+        "daily": [SimpleNamespace(start=dt.date(2026, 10, d), usage=100 + d) for d in daily_days],
         "hourly": [
-            SimpleNamespace(
-                hour_start=dt.datetime(2026, 10, 4, h, tzinfo=UTC), usage=u, total=t
-            )
+            SimpleNamespace(hour_start=dt.datetime(2026, 10, 4, h, tzinfo=UTC), usage=u, total=t)
             for h, u, t in ((0, 10, 1010), (1, 0, 1010), (2, 5, 1015))
         ],
         "tariff": (
@@ -66,9 +62,7 @@ async def _setup(hass: HomeAssistant, entry: MockConfigEntry, raw: dict) -> None
 
 def _state(hass: HomeAssistant, platform: str, key: str):
     registry = er.async_get(hass)
-    entity_id = registry.async_get_entity_id(
-        platform, DOMAIN, f"{ACCOUNT}_{METER}_{key}"
-    )
+    entity_id = registry.async_get_entity_id(platform, DOMAIN, f"{ACCOUNT}_{METER}_{key}")
     assert entity_id is not None, f"no {platform} entity for {key}"
     return hass.states.get(entity_id)
 
@@ -85,9 +79,7 @@ async def test_entities_report_the_derived_figures(hass: HomeAssistant) -> None:
     assert month.attributes["month"] == "2026-10"
     assert float(_state(hass, "sensor", "meter_reading").state) == 1015
     assert float(_state(hass, "sensor", "latest_day_cost").state) == pytest.approx(0.92)
-    assert float(_state(hass, "sensor", "month_to_date_cost").state) == pytest.approx(
-        3.64
-    )
+    assert float(_state(hass, "sensor", "month_to_date_cost").state) == pytest.approx(3.64)
 
 
 async def test_meter_reading_names_its_statistic(hass: HomeAssistant) -> None:
@@ -103,9 +95,7 @@ async def test_month_to_date_follows_the_latest_data_across_a_month_boundary(
 ) -> None:
     """Data lags ~3 days, so early in a month the latest rows are last month's."""
     raw = _raw()
-    raw["daily"] = [
-        SimpleNamespace(start=dt.date(2026, 9, d), usage=100) for d in (28, 29, 30)
-    ]
+    raw["daily"] = [SimpleNamespace(start=dt.date(2026, 9, d), usage=100) for d in (28, 29, 30)]
     await _setup(hass, _entry(), raw)
 
     month = _state(hass, "sensor", "month_to_date")
@@ -136,6 +126,7 @@ async def test_hourly_statistics_are_imported_at_their_real_times(
     _hass, metadata, stats = add_stats.call_args.args
     assert metadata["statistic_id"] == "thames_water_meter:m1_water_consumption"
     assert metadata["has_sum"] is True
+    assert metadata["mean_type"] is StatisticMeanType.NONE
     assert metadata["unit_of_measurement"] == "L"
     assert [s["start"].hour for s in stats] == [0, 1, 2]
     assert [s["sum"] for s in stats] == [1010, 1010, 1015]
@@ -146,9 +137,7 @@ async def test_placeholder_hours_without_a_meter_read_are_not_imported(
 ) -> None:
     raw = _raw()
     raw["hourly"].append(
-        SimpleNamespace(
-            hour_start=dt.datetime(2026, 10, 4, 3, tzinfo=UTC), usage=0, total=0
-        )
+        SimpleNamespace(hour_start=dt.datetime(2026, 10, 4, 3, tzinfo=UTC), usage=0, total=0)
     )
     entry = _entry()
     entry.add_to_hass(hass)
