@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-DOMAIN = "thames_water"
+DOMAIN = "thames_water_meter"
 
 CONF_SPIKE_THRESHOLD = "spike_threshold"
 

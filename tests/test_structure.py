@@ -1,6 +1,6 @@
 import ast, pathlib, sys
 bad = []
-for f in pathlib.Path("custom_components/thames_water").glob("*.py"):
+for f in pathlib.Path("custom_components/thames_water_meter").glob("*.py"):
     for n in ast.walk(ast.parse(f.read_text())):
         if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.returns is not None:
             ann = ast.unparse(n.returns)

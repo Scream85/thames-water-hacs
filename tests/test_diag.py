@@ -1,5 +1,5 @@
 import importlib.util, sys, types
-spec = importlib.util.spec_from_file_location("diagnostics", "custom_components/thames_water/diagnostics.py")
+spec = importlib.util.spec_from_file_location("diagnostics", "custom_components/thames_water_meter/diagnostics.py")
 d = importlib.util.module_from_spec(spec); sys.modules["diagnostics"] = d; spec.loader.exec_module(d)
 class R:  # minimal stand-in for requests.Response
     status_code = 200

@@ -1,7 +1,7 @@
 import datetime as dt, sys
-sys.path.insert(0, "custom_components/thames_water")
+sys.path.insert(0, "custom_components/thames_water_meter")
 import importlib.util
-spec = importlib.util.spec_from_file_location("analysis", "custom_components/thames_water/analysis.py")
+spec = importlib.util.spec_from_file_location("analysis", "custom_components/thames_water_meter/analysis.py")
 a = importlib.util.module_from_spec(spec); sys.modules['analysis'] = a; spec.loader.exec_module(a)
 from thameswaterapi import Line, meter_usage_lines_to_timeseries, lines_to_timeseries
 

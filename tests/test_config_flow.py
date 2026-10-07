@@ -13,19 +13,19 @@ from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from thameswaterapi import AuthenticationError
 
-from custom_components.thames_water.const import CONF_SPIKE_THRESHOLD, DOMAIN
+from custom_components.thames_water_meter.const import CONF_SPIKE_THRESHOLD, DOMAIN
 
 ACCOUNT = 12345678
 CREDENTIALS = {"email": "someone@example.com", "password": "hunter2"}
-LOGIN = "custom_components.thames_water.config_flow._login"
+LOGIN = "custom_components.thames_water_meter.config_flow._login"
 
 
 @pytest.fixture(autouse=True)
 def mock_setup_entry() -> Generator[None]:
     """Keep a created or reloaded entry from logging in for real."""
     with (
-        patch("custom_components.thames_water.async_setup_entry", return_value=True),
-        patch("custom_components.thames_water.async_unload_entry", return_value=True),
+        patch("custom_components.thames_water_meter.async_setup_entry", return_value=True),
+        patch("custom_components.thames_water_meter.async_unload_entry", return_value=True),
     ):
         yield
 
