@@ -137,6 +137,17 @@ their real timestamps** instead of relying on sensor states. In Settings -> Dash
 -> Water consumption -> Add, pick the statistic named
 **"Thames Water <meter> consumption"** (not the sensors). Re-imports are idempotent.
 
+**You cannot pick one of the usage sensors there.** Searching for `sensor.…` finds "No
+statistics found", because the sensors deliberately have no `state_class`: their data is days old,
+so Home Assistant would record it at the wrong time. Clear the search box and type
+`Thames Water` or `consumption` instead. The statistic is imported by the integration, so it has
+no entity ID. Its ID is `thames_water_meter:<meter number>_water_consumption`, shown in the
+`statistic_id` attribute of the **Meter reading** sensor, and it is listed under Developer tools
+-> Statistics once the first import has run.
+
+For the price, use the **Combined water rate** sensor (GBP/m³) as "Use an entity tracking the
+total costs", or a fixed price from your bill.
+
 ## Alerts
 Replace the old email alerts with an automation on the `Usage spike` binary sensor turning on,
 calling any `notify.*` action.
