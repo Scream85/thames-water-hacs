@@ -6,7 +6,8 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
 ## Unreleased
 
 ### Added
-- Buy Me a Coffee link: a README badge and the GitHub Sponsor button (`.github/FUNDING.yml`).
+- Buy Me a Coffee: the official button in the README and the GitHub Sponsor button
+  (`.github/FUNDING.yml`).
 - Acknowledgements and an all-contributors table in the README, crediting gavraq, Jelmer
   Vernooij and Ayrton Bourn, links to their repositories (including `thameswaterapi`), and a
   credit comment for the test fixtures.

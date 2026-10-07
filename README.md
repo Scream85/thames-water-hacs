@@ -1,6 +1,6 @@
 # Thames Water Smart Meter for Home Assistant
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buymeacoffee&logoColor=white)](https://buymeacoffee.com/silverscream85)
+<a href="https://www.buymeacoffee.com/silverscream85" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="60" width="217"></a>
 
 Native port of `gavraq/thames-water-service`. The Selenium/Chrome scraper, FastAPI app,
 SQLite, scheduler, dashboard and SMTP alerts are replaced by Home Assistant itself.
