@@ -1,0 +1,67 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Thames Water account",
+        "description": "Sign in with your Thames Water online account (the account must have a smart meter).",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Thames Water",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password",
+      "cannot_connect": "Failed to connect to Thames Water",
+      "no_meter": "No smart meter was found on this account.",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Account is already configured",
+      "reauth_successful": "Re-authentication was successful"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Thames Water options",
+        "data": {
+          "spike_threshold": "Daily spike threshold (litres)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "latest_day_usage": {
+        "name": "Latest day usage"
+      },
+      "average_7d": {
+        "name": "7-day average usage"
+      },
+      "month_to_date": {
+        "name": "Month-to-date usage"
+      },
+      "meter_reading": {
+        "name": "Meter reading"
+      },
+      "latest_day_cost": {
+        "name": "Latest day cost"
+      },
+      "month_to_date_cost": {
+        "name": "Month-to-date cost"
+      }
+    },
+    "binary_sensor": {
+      "usage_spike": {
+        "name": "Usage spike"
+      }
+    }
+  }
+}
