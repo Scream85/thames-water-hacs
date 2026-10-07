@@ -1,15 +1,17 @@
 {
-  "codeowners": [],
+  "domain": "thames_water",
+  "name": "Thames Water Smart Meter",
+  "codeowners": [
+    "@Scream85"
+  ],
   "config_flow": true,
   "dependencies": [
     "recorder"
   ],
   "documentation": "https://github.com/Scream85/thames-water-hacs",
-  "domain": "thames_water",
   "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Scream85/thames-water-hacs/issues",
-  "name": "Thames Water Smart Meter",
   "requirements": [
     "thameswaterapi>=0.6.0"
   ],
