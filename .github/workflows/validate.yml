@@ -24,9 +24,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - run: pip install thameswaterapi
-      - run: |
-          python tests/test_analysis.py
-          python tests/test_diag.py
-          python tests/test_structure.py
+          # The oldest version Home Assistant itself supports.
+          python-version: "3.13"
+      - run: pip install -r requirements_test.txt
+      # test_analysis, test_diag and test_structure are import-time scripts,
+      # so pytest runs them when it collects them.
+      - run: pytest
