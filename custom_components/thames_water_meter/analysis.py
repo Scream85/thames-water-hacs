@@ -45,6 +45,37 @@ def daily_metrics(daily: list[Any]) -> DailyMetrics:
     )
 
 
+@dataclass
+class HourlyMinimum:
+    """The quietest hour of the latest complete day."""
+
+    date: dt.date
+    usage: float
+    hour: int
+
+
+# A day has 24 hourly rows, 23 or 25 across a clock change.
+FULL_DAY_HOURS = 23
+
+
+def minimum_hourly_usage(hours: list[Any]) -> HourlyMinimum | None:
+    """Lowest hourly usage on the latest day that has (nearly) all its hours.
+
+    Water used overnight is a leak indicator, so the minimum is the useful figure.
+    A partial day is skipped, because its minimum only covers part of the day and
+    would read as a quiet day. Ties go to the earliest hour.
+    """
+    by_day: dict[dt.date, list[Any]] = {}
+    for h in hours:
+        by_day.setdefault(h.hour_start.date(), []).append(h)
+    full_days = [day for day, rows in by_day.items() if len(rows) >= FULL_DAY_HOURS]
+    if not full_days:
+        return None
+    day = max(full_days)
+    quietest = min(sorted(by_day[day], key=lambda h: h.hour_start), key=lambda h: h.usage)
+    return HourlyMinimum(date=day, usage=float(quietest.usage), hour=quietest.hour_start.hour)
+
+
 def reads_are_start_of_hour(hours: list[Any]) -> bool:
     """Work out whether `total` is the meter read at the start or end of the hour.
 

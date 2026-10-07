@@ -6,6 +6,9 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
 ## Unreleased
 
 ### Added
+- Minimum hourly usage sensor (the quietest hour of the latest complete day, a leak indicator)
+  and a Last data diagnostic timestamp sensor. Idea from `ale770/ha-thames-water`.
+- `scripts/live_check.py`, a read-only check of the real Thames Water API for maintainers.
 - Buy Me a Coffee: the official button in the README and the GitHub Sponsor button
   (`.github/FUNDING.yml`).
 - Acknowledgements and an all-contributors table in the README, crediting gavraq, Jelmer

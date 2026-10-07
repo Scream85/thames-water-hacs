@@ -37,6 +37,8 @@
       "average_7d": { "name": "7-day average usage" },
       "month_to_date": { "name": "Month-to-date usage" },
       "meter_reading": { "name": "Meter reading" },
+      "min_hourly_usage": { "name": "Minimum hourly usage" },
+      "last_data": { "name": "Last data" },
       "latest_day_cost": { "name": "Latest day cost" },
       "month_to_date_cost": { "name": "Month-to-date cost" }
     },

@@ -11,9 +11,10 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
-from homeassistant.const import UnitOfVolume
+from homeassistant.const import EntityCategory, UnitOfVolume
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .analysis import cost
 from .coordinator import ThamesWaterConfigEntry, ThamesWaterData
@@ -39,7 +40,7 @@ def _month_cost(data: ThamesWaterData) -> float | None:
 
 @dataclass(frozen=True, kw_only=True)
 class ThamesWaterSensorDescription(SensorEntityDescription):
-    value_fn: Callable[[ThamesWaterData], float | None]
+    value_fn: Callable[[ThamesWaterData], Any]
     attrs_fn: Callable[[ThamesWaterData], dict[str, Any]] | None = None
 
 
@@ -83,6 +84,28 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
             "read_taken_at": "start of hour" if d.read_is_start_of_hour else "end of hour",
         },
     ),
+    # Water used in the quietest hour of the latest complete day. A figure that
+    # stays well above zero overnight points to a leak.
+    ThamesWaterSensorDescription(
+        key="min_hourly_usage",
+        translation_key="min_hourly_usage",
+        device_class=SensorDeviceClass.WATER,
+        native_unit_of_measurement=UnitOfVolume.LITERS,
+        suggested_display_precision=0,
+        value_fn=lambda d: d.hourly_minimum.usage if d.hourly_minimum else None,
+        attrs_fn=lambda d: (
+            {"date": d.hourly_minimum.date, "hour": d.hourly_minimum.hour}
+            if d.hourly_minimum
+            else {}
+        ),
+    ),
+    ThamesWaterSensorDescription(
+        key="last_data",
+        translation_key="last_data",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda d: dt_util.as_utc(d.latest_hour) if d.latest_hour else None,
+    ),
     ThamesWaterSensorDescription(
         key="latest_day_cost",
         translation_key="latest_day_cost",
@@ -120,7 +143,7 @@ class ThamesWaterSensor(ThamesWaterEntity, SensorEntity):
         self.entity_description = description
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> Any:
         return self.entity_description.value_fn(self.coordinator.data)
 
     @property

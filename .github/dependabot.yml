@@ -12,3 +12,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Every release after 0.13.316 needs Python 3.14. Remove this once CI, ruff
+      # and mypy have moved to 3.14.
+      - dependency-name: pytest-homeassistant-custom-component

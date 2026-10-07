@@ -12,6 +12,7 @@ from homeassistant.components.recorder.models import StatisticMeanType
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from thameswaterapi import AuthenticationError
 
@@ -80,6 +81,46 @@ async def test_entities_report_the_derived_figures(hass: HomeAssistant) -> None:
     assert float(_state(hass, "sensor", "meter_reading").state) == 1015
     assert float(_state(hass, "sensor", "latest_day_cost").state) == pytest.approx(0.92)
     assert float(_state(hass, "sensor", "month_to_date_cost").state) == pytest.approx(3.64)
+
+
+def _full_day_hourly() -> list[SimpleNamespace]:
+    """Two complete days; the quietest hour is 03:00 on the second day."""
+    rows, total = [], 1000
+    for day in (3, 4):
+        for hour in range(24):
+            usage = 3 if (day, hour) == (4, 3) else 20
+            total += usage
+            rows.append(
+                SimpleNamespace(
+                    hour_start=dt.datetime(2026, 10, day, hour, tzinfo=UTC),
+                    usage=usage,
+                    total=total,
+                )
+            )
+    return rows
+
+
+async def test_minimum_hourly_usage_and_last_data_sensors(hass: HomeAssistant) -> None:
+    raw = _raw()
+    raw["hourly"] = _full_day_hourly()
+    await _setup(hass, _entry(), raw)
+
+    quietest = _state(hass, "sensor", "min_hourly_usage")
+    assert float(quietest.state) == 3
+    assert quietest.attributes["hour"] == 3
+    assert quietest.attributes["date"] == dt.date(2026, 10, 4)
+
+    last = _state(hass, "sensor", "last_data")
+    assert dt_util.parse_datetime(last.state) == dt.datetime(2026, 10, 4, 23, tzinfo=UTC)
+
+
+async def test_minimum_hourly_usage_has_no_value_without_a_complete_day(
+    hass: HomeAssistant,
+) -> None:
+    """The default fixture has three hours, which would read as a quiet day."""
+    await _setup(hass, _entry(), _raw())
+
+    assert _state(hass, "sensor", "min_hourly_usage").state == "unknown"
 
 
 async def test_meter_reading_names_its_statistic(hass: HomeAssistant) -> None:

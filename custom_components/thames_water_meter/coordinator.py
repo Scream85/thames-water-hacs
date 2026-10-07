@@ -37,8 +37,10 @@ from thameswaterapi import (
 
 from .analysis import (
     DailyMetrics,
+    HourlyMinimum,
     cumulative_sum,
     daily_metrics,
+    minimum_hourly_usage,
     reads_are_start_of_hour,
 )
 from .const import DOMAIN, HOURLY_LOOKBACK_DAYS, UPDATE_INTERVAL
@@ -70,6 +72,7 @@ class ThamesWaterData:
     tariff: Tariff | None
     statistic_id: str
     read_is_start_of_hour: bool = False
+    hourly_minimum: HourlyMinimum | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -170,6 +173,7 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             tariff=self._tariff,
             statistic_id=statistic_id,
             read_is_start_of_hour=start_of_hour,
+            hourly_minimum=minimum_hourly_usage(hourly),
         )
 
     def _import_statistics(

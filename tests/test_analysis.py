@@ -57,4 +57,22 @@ dl2 = [Line(f"{d}-September", 100, 5000 + d, False, "X") for d in range(28, 31)]
 m2 = a.daily_metrics(lines_to_timeseries(dl2))
 assert m2.month == "2026-09" and m2.month_to_date == 300 and m2.month_days == 3, m2
 assert a.cost(1000, 0.0040223, 0.532) == round(4.0223 + 0.532, 2)
+
+# quietest hour: latest day with (nearly) all its hours; a partial newest day is skipped
+from types import SimpleNamespace as N  # noqa: E402
+
+
+def _day(d, count, quiet_hour):
+    return [
+        N(hour_start=dt.datetime(2026, 10, d, h, tzinfo=dt.UTC), usage=2 if h == quiet_hour else 20)
+        for h in range(count)
+    ]
+
+
+quietest = a.minimum_hourly_usage(_day(3, 24, 4) + _day(4, 24, 2) + _day(5, 10, 1))
+assert (quietest.date, quietest.usage, quietest.hour) == (dt.date(2026, 10, 4), 2.0, 2), quietest
+assert a.minimum_hourly_usage(_day(5, 10, 1)) is None
+assert a.minimum_hourly_usage([]) is None
+# a clock-change day has 23 hours and still counts
+assert a.minimum_hourly_usage(_day(5, 23, 7)).hour == 7
 print("all good")
