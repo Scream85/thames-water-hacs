@@ -123,6 +123,27 @@ async def test_minimum_hourly_usage_has_no_value_without_a_complete_day(
     assert _state(hass, "sensor", "min_hourly_usage").state == "unknown"
 
 
+@pytest.mark.parametrize(
+    "key",
+    ["latest_day_usage", "average_7d", "month_to_date", "meter_reading", "min_hourly_usage"],
+)
+async def test_litre_sensors_show_whole_litres(hass: HomeAssistant, key: str) -> None:
+    """Thames Water reports whole litres, so "345.0 L" is noise.
+
+    Water sensors can be switched to m3 in the entity settings, and Home Assistant
+    adjusts the decimals for the converted unit, so no separate m3 entities are needed.
+    """
+    raw = _raw()
+    raw["hourly"] = _full_day_hourly()
+    await _setup(hass, _entry(), raw)
+
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{ACCOUNT}_{METER}_{key}")
+    entry = registry.async_get(entity_id)
+    assert entry.options["sensor"]["suggested_display_precision"] == 0
+    assert entry.unit_of_measurement == "L"
+
+
 async def test_meter_reading_names_its_statistic(hass: HomeAssistant) -> None:
     await _setup(hass, _entry(), _raw())
 

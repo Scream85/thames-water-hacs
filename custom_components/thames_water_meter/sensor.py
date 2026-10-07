@@ -53,6 +53,7 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
         translation_key="latest_day_usage",
         device_class=SensorDeviceClass.WATER,
         native_unit_of_measurement=UnitOfVolume.LITERS,
+        suggested_display_precision=0,
         value_fn=lambda d: d.daily.latest_usage,
         attrs_fn=lambda d: {"date": d.daily.latest_date},
     ),
@@ -69,6 +70,7 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
         translation_key="month_to_date",
         device_class=SensorDeviceClass.WATER,
         native_unit_of_measurement=UnitOfVolume.LITERS,
+        suggested_display_precision=0,
         value_fn=lambda d: d.daily.month_to_date,
         attrs_fn=lambda d: {"month": d.daily.month, "days": d.daily.month_days},
     ),
@@ -77,6 +79,7 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
         translation_key="meter_reading",
         device_class=SensorDeviceClass.WATER,
         native_unit_of_measurement=UnitOfVolume.LITERS,
+        suggested_display_precision=0,
         value_fn=lambda d: d.latest_meter_read,
         attrs_fn=lambda d: {
             "as_of": d.latest_hour,
