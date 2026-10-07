@@ -5,6 +5,16 @@ SQLite, scheduler, dashboard and SMTP alerts are replaced by Home Assistant itse
 Login and data come from the [`thameswaterapi`](https://pypi.org/project/thameswaterapi/)
 library (direct web API, no browser).
 
+## Source repositories
+This project builds on two others:
+* [`gavraq/thames-water-service`](https://github.com/gavraq/thames-water-service) - the original
+  Selenium scraper, API, dashboard and alerts that this integration replaces.
+* [`jelmer/homeassistant-thameswater`](https://github.com/jelmer/homeassistant-thameswater) - the
+  existing Home Assistant integration (Apache-2.0), by the author of the
+  [`thameswaterapi`](https://pypi.org/project/thameswaterapi/) library used here. It is based on
+  earlier work by AyrtonB. This one adds the spike sensor, 7-day average, month-to-date and cost
+  sensors, and uses a single coordinator.
+
 ## Install
 ### HACS (recommended)
 1. HACS -> three dots -> **Custom repositories** -> add
