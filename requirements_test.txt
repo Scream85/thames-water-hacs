@@ -1,6 +1,6 @@
 # Home Assistant itself, pytest and the fixtures a custom integration is tested
 # against. The Home Assistant version under test comes from this pin.
-pytest-homeassistant-custom-component==0.13.316
+pytest-homeassistant-custom-component==0.13.368
 # The integration's own requirement (manifest.json). Home Assistant installs it
 # at runtime, so nothing installs it for a test run.
 thameswaterapi>=0.6.0
