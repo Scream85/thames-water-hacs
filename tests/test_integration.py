@@ -144,6 +144,28 @@ async def test_the_device_is_not_attributed_to_thames_water(hass: HomeAssistant)
     assert device.model == "Thames Water smart meter"
 
 
+async def test_an_existing_device_loses_the_old_manufacturer(hass: HomeAssistant) -> None:
+    """Leaving the manufacturer out of the device info means "keep what is stored", so a
+    device created by an earlier version would still read "by Thames Water"."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, f"{ACCOUNT}_{METER}")},
+        manufacturer="Thames Water",
+        model="Smart water meter",
+    )
+
+    with patch.object(*FETCH, return_value=_raw()), patch(STATS):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, f"{ACCOUNT}_{METER}")})
+    assert device is not None
+    assert device.manufacturer is None
+    assert device.model == "Thames Water smart meter"
+
+
 async def test_minimum_hourly_usage_and_last_data_sensors(hass: HomeAssistant) -> None:
     raw = _raw()
     raw["hourly"] = _full_day_hourly()

@@ -3,6 +3,13 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
+## Unreleased
+
+### Fixed
+- The device page still said "by Thames Water" after 0.26.10.1b2, because leaving the
+  manufacturer out keeps the value already stored. It is now cleared explicitly, so existing
+  devices lose it on the next start.
+
 ## 0.26.10.1b2 - 2026-10-07 (beta)
 
 Offered by HACS only with "Show beta versions" switched on for this repository. Restart Home

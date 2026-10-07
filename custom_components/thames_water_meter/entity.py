@@ -22,6 +22,9 @@ class ThamesWaterEntity(CoordinatorEntity[ThamesWaterCoordinator]):
             identifiers={(DOMAIN, f"{data.account_number}_{data.meter}")},
             name=f"Thames Water meter {data.meter}",
             # No manufacturer: "by Thames Water" would say the company makes this integration,
-            # and the meter's real maker is not something the account data tells us.
+            # and the meter's real maker is not something the account data tells us. It is set
+            # to None on purpose. Leaving it out means "keep what is stored", so a device
+            # created by an earlier version would still read "by Thames Water".
+            manufacturer=None,
             model="Thames Water smart meter",
         )
