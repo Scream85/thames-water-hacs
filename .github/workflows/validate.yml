@@ -6,6 +6,9 @@ on:
     - cron: "0 3 * * 1"
 jobs:
   hacs:
+    # HACS validates a public repository, so this only makes sense on the real one. The
+    # private staging repo skips it, and a skipped job counts as passed.
+    if: github.repository == 'Scream85/thames-water-hacs'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
