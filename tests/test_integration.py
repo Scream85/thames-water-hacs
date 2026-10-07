@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -18,6 +19,7 @@ from thameswaterapi import AuthenticationError, Tariff
 
 from custom_components.thames_water_meter.const import CONF_SPIKE_THRESHOLD, DOMAIN
 from custom_components.thames_water_meter.coordinator import ThamesWaterCoordinator
+from custom_components.thames_water_meter.diagnostics import async_get_config_entry_diagnostics
 
 ACCOUNT = 12345678
 METER = "M1"
@@ -373,6 +375,40 @@ async def test_an_unreachable_site_retries_setup(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_diagnostics_hold_no_credentials_or_identifiers(hass: HomeAssistant) -> None:
+    raw = _raw()
+    raw["meter"] = "AB123456"
+    entry = _entry(options={CONF_SPIKE_THRESHOLD: 500})
+    await _setup(hass, entry, raw)
+
+    result = await async_get_config_entry_diagnostics(hass, entry)
+
+    text = json.dumps(result)  # must be plain JSON, which is what the download needs
+    for secret in ("hunter2", "someone@example.com", str(ACCOUNT), "AB123456"):
+        assert secret not in text
+    assert result["entry"]["data"]["password"] == "**REDACTED**"
+    assert result["entry"]["data"]["email"] == "**REDACTED**"
+    assert result["entry"]["options"] == {CONF_SPIKE_THRESHOLD: 500}
+    assert result["account"] == "******78"
+    assert result["meter"] == "******56"
+    assert result["coordinator"]["last_update_success"] is True
+    assert result["coordinator"]["older_history_imported"] is False  # _fetch is mocked here
+    assert result["daily"]["latest_usage"] == 104
+    assert result["daily"]["latest_date"] == "2026-10-04"
+    assert result["latest_hour"] == "2026-10-04T02:00:00+00:00"
+    assert result["tariff"]["clean_water_rate_per_m3"] == 1.5
+
+
+async def test_diagnostics_work_without_a_tariff(hass: HomeAssistant) -> None:
+    entry = _entry()
+    await _setup(hass, entry, _raw(tariff=False))
+
+    result = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert result["tariff"] is None
+    json.dumps(result)
 
 
 async def test_unloading_removes_the_entities(hass: HomeAssistant) -> None:

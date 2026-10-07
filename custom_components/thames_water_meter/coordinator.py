@@ -109,6 +109,11 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
         # hour and anchored to the meter read, so importing it again is harmless.
         self._backfilled = False
 
+    @property
+    def history_imported(self) -> bool:
+        """Whether the older hourly history has been fetched since start-up."""
+        return self._backfilled
+
     @staticmethod
     def _hourly(
         client: ThamesWater, meter: str, start: dt.date, end: dt.date

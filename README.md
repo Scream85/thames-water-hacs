@@ -117,6 +117,13 @@ The domain changed in 0.26.10.0, so Home Assistant sees a different integration:
 | Latest day cost / Month-to-date cost | GBP, uses Thames Water's published tariff + daily standing charge |
 | Usage spike | problem binary sensor, on when latest day > threshold (Configure -> default 800 L) |
 
+## Reporting a problem
+Settings -> Devices & services -> Thames Water Smart Meter -> three dots -> **Download
+diagnostics**, and attach the file to the issue. It holds the latest figures, the options, the
+published tariff and whether the history import has run. Your email and password are redacted, and
+the account number and meter id are masked to their last two characters, so it is safe to share.
+Still skim it before posting.
+
 ## Energy dashboard (water)
 Thames Water data is ~3 days old, so the integration imports **hourly long-term statistics at
 their real timestamps** instead of relying on sensor states. In Settings -> Dashboards -> Energy

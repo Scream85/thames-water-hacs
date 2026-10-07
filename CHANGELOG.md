@@ -18,6 +18,8 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
   charging year (1 April to 31 March) has ended, and deleted when the integration is removed.
 
 ### Added
+- Download diagnostics for bug reports, with credentials redacted and the account number and
+  meter id masked.
 - Cubic metre (m³) twins of the five volume sensors (latest day, 7-day average, month-to-date,
   meter reading and minimum hourly usage), with three decimals, for lining Thames Water up with
   meters that report m³. They are extra entities, so both units are always available.
