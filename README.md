@@ -34,6 +34,10 @@ This project builds on these:
   this integration uses for login and data.
 * [`AyrtonB/Thames-Water`](https://github.com/AyrtonB/Thames-Water) - the earlier Thames Water
   API client that the two above build on.
+* [`ale770/ha-thames-water`](https://github.com/ale770/ha-thames-water) - another Home Assistant
+  integration for Thames Water, still maintained. The minimum hourly usage and last data sensors
+  here, and importing the history in a separate window, come from ideas in it. No code was
+  copied: that repository has no licence.
 
 ## Acknowledgements
 * **gavraq** - the original Thames Water monitoring service, whose features this integration
@@ -43,6 +47,8 @@ This project builds on these:
   test fixtures in `tests/conftest.py` follow the pattern in his repository.
 * **Ayrton Bourn** - the first Thames Water API client and Home Assistant work that the library
   and integration above grew from.
+* **Ale (ale770)** - the `ha-thames-water` integration, which inspired the minimum hourly usage
+  and last data sensors and the approach to importing history.
 
 ## Contributors
 Thanks to everyone below ([emoji key](https://allcontributors.org/docs/en/emoji-key)). Add
@@ -60,6 +66,7 @@ on this repository.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/gavraq"><img src="https://avatars.githubusercontent.com/u/59359644?v=4?s=100" width="100px;" alt="gavraq"/><br /><sub><b>gavraq</b></sub></a><br /><a href="https://github.com/Scream85/thames-water-hacs/commits?author=gavraq" title="Code">💻</a> <a href="#ideas-gavraq" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jelmer"><img src="https://avatars.githubusercontent.com/u/49032?v=4?s=100" width="100px;" alt="Jelmer Vernooij"/><br /><sub><b>Jelmer Vernooij</b></sub></a><br /><a href="#tool-jelmer" title="Tools">🔧</a> <a href="#ideas-jelmer" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/AyrtonB"><img src="https://avatars.githubusercontent.com/u/29051639?v=4?s=100" width="100px;" alt="Ayrton Bourn"/><br /><sub><b>Ayrton Bourn</b></sub></a><br /><a href="#tool-AyrtonB" title="Tools">🔧</a> <a href="#ideas-AyrtonB" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ale770"><img src="https://avatars.githubusercontent.com/u/4981303?v=4?s=100" width="100px;" alt="Ale"/><br /><sub><b>Ale</b></sub></a><br /><a href="#ideas-ale770" title="Ideas, Planning, & Feedback">🤔</a></td>
     </tr>
   </tbody>
 </table>
