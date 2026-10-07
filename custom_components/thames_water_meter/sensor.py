@@ -131,7 +131,11 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
         native_unit_of_measurement="GBP",
         suggested_display_precision=2,
         value_fn=_month_cost,
-        attrs_fn=lambda d: {"month": d.daily.month, "days": d.daily.month_days},
+        attrs_fn=lambda d: {
+            "month": d.daily.month,
+            "days": d.daily.month_days,
+            "statistic_id": d.cost_statistic_id,
+        },
     ),
     # The published metered rates, in GBP per cubic metre as a bill states them. The combined
     # rate is what a litre costs, and can be used as the price in the Energy dashboard.

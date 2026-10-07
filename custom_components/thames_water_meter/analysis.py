@@ -86,6 +86,46 @@ def tariff_in_force(effective: dt.date, today: dt.date) -> bool:
     return today < dt.date(start_year + 1, 4, 1)
 
 
+def _hours_in_local_day(hour_start: dt.datetime) -> float:
+    """23, 24 or 25: how many hours the local day containing `hour_start` really has."""
+    midnight = hour_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    next_midnight = midnight + dt.timedelta(days=1)  # wall-clock arithmetic in its own zone
+    seconds = (next_midnight.astimezone(dt.UTC) - midnight.astimezone(dt.UTC)).total_seconds()
+    return seconds / 3600
+
+
+def hourly_costs(
+    hours: list[Any],
+    unit_rate_per_litre: float,
+    standing_per_day: float,
+    effective: dt.date,
+) -> list[tuple[dt.datetime, float]]:
+    """Cost in GBP of each hour: water used at the combined rate, plus its share of the day's
+    standing charge.
+
+    The standing charge is spread over the hours the local day really has, so a day's total is
+    always the daily charge, even on the 23 and 25 hour days when the clocks change. Hours before
+    the date the rates took effect get no cost, since the earlier rates are not known.
+    """
+    rows = []
+    for hour in hours:
+        if hour.hour_start.date() < effective:
+            continue
+        standing = standing_per_day / _hours_in_local_day(hour.hour_start)
+        rows.append((hour.hour_start, hour.usage * unit_rate_per_litre + standing))
+    return rows
+
+
+def running_total(costs: list[tuple[dt.datetime, float]], base: float) -> list[float]:
+    """The cumulative cost after each hour, continuing from `base`."""
+    total = base
+    totals = []
+    for _start, cost in costs:
+        total = round(total + cost, 6)
+        totals.append(total)
+    return totals
+
+
 def merge_hourly(*windows: list[Any]) -> list[Any]:
     """Join hourly windows into one list, oldest first, one row per hour.
 

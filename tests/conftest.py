@@ -8,6 +8,7 @@ recorder the manifest depends on.
 from __future__ import annotations
 
 from collections.abc import Generator
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -30,3 +31,41 @@ def mock_recorder_before_hass() -> Generator[None]:
     """
     with patch("homeassistant.components.recorder.async_setup", return_value=True):
         yield
+
+
+class StoredStatistics:
+    """What the fake recorder holds: rows per statistic id, and the reads made of it."""
+
+    def __init__(self) -> None:
+        self.rows: dict[str, list[dict[str, Any]]] = {}
+        self.reads: list[tuple[Any, Any, set[str]]] = []
+
+
+@pytest.fixture(autouse=True)
+def stored_statistics() -> Generator[StoredStatistics]:
+    """Stand in for reading back statistics already stored in the recorder.
+
+    The cost statistic continues its running total from the last stored value, which is read
+    from the recorder. The recorder is not set up in these tests, so only that read is faked.
+    A test fills `rows` to give the running total something to continue from.
+    """
+    stored = StoredStatistics()
+
+    def during_period(hass, start, end, statistic_ids, period, units, types):
+        stored.reads.append((start, end, set(statistic_ids)))
+        return {sid: stored.rows[sid] for sid in statistic_ids if sid in stored.rows}
+
+    class Instance:
+        async def async_add_executor_job(self, function, *args):
+            return function(*args)
+
+    with (
+        patch(
+            "custom_components.thames_water_meter.coordinator.get_instance", lambda hass: Instance()
+        ),
+        patch(
+            "custom_components.thames_water_meter.coordinator.statistics_during_period",
+            during_period,
+        ),
+    ):
+        yield stored

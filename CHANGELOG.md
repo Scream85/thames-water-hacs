@@ -3,6 +3,21 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
+## Unreleased
+
+### Added
+- A cost statistic, `thames_water_meter:<meter>_water_cost` (GBP, one value per hour), so the
+  Energy dashboard can show spend. Home Assistant cannot price an imported consumption itself, so
+  choose "Use an entity tracking the total costs" and pick "Thames Water &lt;meter&gt; cost". Each hour
+  is the water used at the combined rate plus its share of the standing charge, spread over the
+  hours the local day really has, so a day totals exactly the daily charge even when the clocks
+  change. The running total continues from the stored one, nothing is costed before the current
+  rates took effect, and nothing is imported without a tariff. It matched a real bill to 1p.
+
+### Fixed
+- The README said to use the rate sensor as the Energy dashboard price, which Home Assistant
+  does not allow for an imported statistic.
+
 ## 0.26.10.1b3 - 2026-10-07 (beta)
 
 Offered by HACS only with "Show beta versions" switched on for this repository. The earlier

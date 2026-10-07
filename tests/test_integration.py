@@ -369,8 +369,7 @@ async def test_hourly_statistics_are_imported_at_their_real_times(
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    add_stats.assert_called_once()
-    _hass, metadata, stats = add_stats.call_args.args
+    metadata, stats = _imported(add_stats, "thames_water_meter:m1_water_consumption")
     assert metadata["statistic_id"] == "thames_water_meter:m1_water_consumption"
     assert metadata["has_sum"] is True
     assert metadata["mean_type"] is StatisticMeanType.NONE
@@ -392,8 +391,106 @@ async def test_placeholder_hours_without_a_meter_read_are_not_imported(
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    stats = add_stats.call_args.args[2]
+    _metadata, stats = _imported(add_stats, "thames_water_meter:m1_water_consumption")
     assert [s["sum"] for s in stats] == [1010, 1010, 1015]
+
+
+def _imported(add_stats, statistic_id: str):
+    """The (metadata, stats) of the one import made for a statistic id."""
+    calls = [c for c in add_stats.call_args_list if c.args[1]["statistic_id"] == statistic_id]
+    assert len(calls) == 1, [c.args[1]["statistic_id"] for c in add_stats.call_args_list]
+    return calls[0].args[1], calls[0].args[2]
+
+
+COST_ID = "thames_water_meter:m1_water_cost"
+# The default fixture: hours of 10, 0 and 5 litres, 4.0 GBP/m3 (0.004 per litre), and a standing
+# charge of 0.5 a day, so each hour carries 0.5 / 24 of it.
+HOUR_COSTS = [10 * 0.004 + 0.5 / 24, 0 * 0.004 + 0.5 / 24, 5 * 0.004 + 0.5 / 24]
+
+
+async def test_each_hour_is_costed_into_a_second_statistic(
+    hass: HomeAssistant, stored_statistics
+) -> None:
+    """The Energy dashboard cannot price an imported consumption, so the cost is imported too."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+    with patch.object(*FETCH, return_value=_raw()), patch(STATS) as add_stats:
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    metadata, stats = _imported(add_stats, COST_ID)
+    assert metadata["name"] == "Thames Water M1 cost"
+    assert metadata["unit_of_measurement"] == "GBP"
+    assert metadata["has_sum"] is True
+    assert metadata["has_mean"] is False
+    assert metadata["mean_type"] is StatisticMeanType.NONE
+    assert metadata["unit_class"] is None
+    assert [s["start"].hour for s in stats] == [0, 1, 2]
+    expected, total = [], 0.0
+    for cost in HOUR_COSTS:
+        total += cost
+        expected.append(total)
+    assert [s["sum"] for s in stats] == pytest.approx(expected, abs=1e-5)
+    # The three hours add up to the volume charge plus 3/24 of the daily standing charge.
+    assert stats[-1]["sum"] == pytest.approx(15 * 0.004 + 3 * 0.5 / 24, abs=1e-5)
+
+
+async def test_the_cost_total_continues_from_what_is_already_stored(
+    hass: HomeAssistant, stored_statistics
+) -> None:
+    """Importing a window again must not restart the total from zero."""
+    stored_statistics.rows[COST_ID] = [{"start": 0.0, "sum": 40.0}, {"start": 3600.0, "sum": 50.0}]
+    entry = _entry()
+    entry.add_to_hass(hass)
+    with patch.object(*FETCH, return_value=_raw()), patch(STATS) as add_stats:
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    _metadata, stats = _imported(add_stats, COST_ID)
+    assert stats[0]["sum"] == pytest.approx(50.0 + HOUR_COSTS[0], abs=1e-5)  # the latest stored
+    assert stats[-1]["sum"] == pytest.approx(50.0 + sum(HOUR_COSTS), abs=1e-5)
+    # It looked for what precedes the first imported hour, within the week before it.
+    start, end, ids = stored_statistics.reads[0]
+    assert ids == {COST_ID}
+    assert end == dt.datetime(2026, 10, 4, 0, tzinfo=UTC)
+    assert end - start == dt.timedelta(days=7)
+
+
+async def test_no_cost_is_imported_without_a_tariff(hass: HomeAssistant) -> None:
+    entry = _entry()
+    entry.add_to_hass(hass)
+    with patch.object(*FETCH, return_value=_raw(tariff=False)), patch(STATS) as add_stats:
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    ids = [c.args[1]["statistic_id"] for c in add_stats.call_args_list]
+    assert ids == ["thames_water_meter:m1_water_consumption"]
+
+
+async def test_hours_before_the_rates_took_effect_are_not_costed(hass: HomeAssistant) -> None:
+    """Only the current scheme of charges is known, so earlier hours get no cost."""
+    raw = _raw()
+    raw["tariff"] = Tariff(
+        clean_water_rate_per_m3=1.5,
+        wastewater_rate_per_m3=2.5,
+        water_fixed_per_year=100.0,
+        wastewater_fixed_per_year=82.5,
+        effective_date=dt.date(2026, 10, 5),  # the day after the hours in the fixture
+    )
+    entry = _entry()
+    entry.add_to_hass(hass)
+    with patch.object(*FETCH, return_value=raw), patch(STATS) as add_stats:
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    ids = [c.args[1]["statistic_id"] for c in add_stats.call_args_list]
+    assert ids == ["thames_water_meter:m1_water_consumption"]
+
+
+async def test_the_cost_statistic_id_is_shown_on_the_cost_sensor(hass: HomeAssistant) -> None:
+    await _setup(hass, _entry(), _raw())
+
+    assert _state(hass, "sensor", "month_to_date_cost").attributes["statistic_id"] == COST_ID
 
 
 @pytest.mark.parametrize(

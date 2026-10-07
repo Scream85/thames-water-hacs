@@ -9,12 +9,16 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import requests
+from homeassistant.components.recorder import get_instance
 from homeassistant.components.recorder.models import (
     StatisticData,
     StatisticMeanType,
     StatisticMetaData,
 )
-from homeassistant.components.recorder.statistics import async_add_external_statistics
+from homeassistant.components.recorder.statistics import (
+    async_add_external_statistics,
+    statistics_during_period,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, UnitOfVolume
 from homeassistant.core import HomeAssistant
@@ -41,9 +45,11 @@ from .analysis import (
     HourlyMinimum,
     cumulative_sum,
     daily_metrics,
+    hourly_costs,
     merge_hourly,
     minimum_hourly_usage,
     reads_are_start_of_hour,
+    running_total,
     tariff_in_force,
 )
 from .const import DOMAIN, HOURLY_BACKFILL_DAYS, HOURLY_RECENT_DAYS, UPDATE_INTERVAL
@@ -83,6 +89,7 @@ class ThamesWaterData:
     statistic_id: str
     read_is_start_of_hour: bool = False
     hourly_minimum: HourlyMinimum | None = None
+    cost_statistic_id: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -204,6 +211,8 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
         statistic_id = f"{DOMAIN}:{_slug(raw['meter'])}_water_consumption"
 
         self._import_statistics(raw["meter"], statistic_id, hourly, start_of_hour)
+        cost_statistic_id = f"{DOMAIN}:{_slug(raw['meter'])}_water_cost"
+        await self._async_import_cost_statistics(raw["meter"], cost_statistic_id, hourly)
 
         latest = hourly[-1] if hourly else None
         return ThamesWaterData(
@@ -216,7 +225,71 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             statistic_id=statistic_id,
             read_is_start_of_hour=start_of_hour,
             hourly_minimum=minimum_hourly_usage(hourly),
+            cost_statistic_id=cost_statistic_id,
         )
+
+    async def _async_sum_before(self, statistic_id: str, first_hour: dt.datetime) -> float:
+        """The stored running total just before `first_hour`, or 0 if nothing precedes it.
+
+        A running total has to continue from what is already stored, otherwise importing a
+        window again would start it from zero and leave a jump where it joins the older hours.
+        Looking back a week covers a gap in the data.
+        """
+        end = dt_util.as_utc(first_hour)
+        rows = await get_instance(self.hass).async_add_executor_job(
+            statistics_during_period,
+            self.hass,
+            end - dt.timedelta(days=7),
+            end,
+            {statistic_id},
+            "hour",
+            None,
+            {"sum"},
+        )
+        for row in reversed(rows.get(statistic_id, [])):
+            total = row.get("sum")
+            if total is not None:
+                return float(total)
+        return 0.0
+
+    async def _async_import_cost_statistics(
+        self, meter: str, statistic_id: str, hourly: list[HourlyMeasurement]
+    ) -> None:
+        """Import what each hour cost, so the Energy dashboard can show spend.
+
+        The dashboard cannot price an imported statistic itself, so the cost is imported
+        alongside it: water used at the combined rate plus the hour's share of the standing
+        charge. Without a tariff nothing is imported, and hours before the rates took effect
+        are skipped.
+        """
+        tariff = self._tariff
+        if tariff is None or not hourly:
+            return
+        costs = hourly_costs(
+            hourly,
+            tariff.unit_rate_per_litre,
+            tariff.standing_charge_per_day,
+            tariff.effective_date,
+        )
+        if not costs:
+            return
+        base = await self._async_sum_before(statistic_id, costs[0][0])
+        totals = running_total(costs, base)
+        stats = [
+            StatisticData(start=dt_util.as_utc(start), state=total, sum=total)
+            for (start, _cost), total in zip(costs, totals, strict=True)
+        ]
+        metadata = StatisticMetaData(
+            has_mean=False,
+            mean_type=StatisticMeanType.NONE,
+            has_sum=True,
+            name=f"Thames Water {meter} cost",
+            source=DOMAIN,
+            statistic_id=statistic_id,
+            unit_of_measurement="GBP",
+            unit_class=None,
+        )
+        async_add_external_statistics(self.hass, metadata, stats)
 
     async def _async_save_tariff(self, tariff: Tariff) -> None:
         """Keep the tariff for the next start, writing only when it has changed."""

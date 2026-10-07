@@ -81,6 +81,44 @@ assert not a.tariff_in_force(dt.date(2026, 4, 1), dt.date(2027, 4, 1))
 assert a.tariff_in_force(dt.date(2026, 2, 1), dt.date(2026, 3, 31))  # still the 2025 year
 assert not a.tariff_in_force(dt.date(2026, 2, 1), dt.date(2026, 4, 1))
 assert a.tariff_in_force(dt.date(2026, 10, 7), dt.date(2026, 10, 7))
+# hourly costs: usage at the combined rate plus the standing charge spread over the real day
+from zoneinfo import ZoneInfo  # noqa: E402
+
+LONDON = ZoneInfo("Europe/London")
+
+
+def _london_day(year, month, day, usage):
+    """Every hour of one London day, as the API returns them, whatever the clocks did."""
+    midnight = dt.datetime(year, month, day, tzinfo=LONDON)
+    rows = []
+    for i in range(26):
+        start = (midnight.astimezone(dt.UTC) + dt.timedelta(hours=i)).astimezone(LONDON)
+        if start.date() == midnight.date():
+            rows.append(N(hour_start=start, usage=usage))
+    return rows
+
+
+effective = dt.date(2026, 4, 1)
+for day, hours in (
+    (dt.date(2026, 10, 7), 24),
+    (dt.date(2026, 3, 29), 23),
+    (dt.date(2026, 10, 25), 25),
+):
+    rows = _london_day(day.year, day.month, day.day, 0)
+    assert len(rows) == hours, (day, len(rows))
+    # no water used: the standing charge alone adds up to the daily charge, whatever the day's length
+    assert (
+        abs(sum(c for _, c in a.hourly_costs(rows, 0.004, 0.48, dt.date(2026, 1, 1))) - 0.48) < 1e-9
+    )
+rows = _london_day(2026, 10, 7, 10)
+costs = a.hourly_costs(rows, 0.004, 0.48, effective)
+assert abs(sum(c for _, c in costs) - (24 * 10 * 0.004 + 0.48)) < 1e-9  # 1.44
+assert a.hourly_costs(rows, 0.004, 0.48, dt.date(2026, 10, 8)) == []  # rates not yet in force
+assert a.hourly_costs([], 0.004, 0.48, effective) == []
+# the running total continues from where the stored one left off
+totals = a.running_total(costs, 100.0)
+assert totals[0] == round(100.0 + costs[0][1], 6) and abs(totals[-1] - 101.44) < 1e-6, totals
+assert a.running_total([], 5.0) == []
 # merging windows: one row per hour, oldest first, a later window wins on overlap
 older = [N(hour_start=dt.datetime(2026, 9, 1, 0, tzinfo=dt.UTC), usage=1)]
 older.append(N(hour_start=dt.datetime(2026, 9, 1, 1, tzinfo=dt.UTC), usage=2))

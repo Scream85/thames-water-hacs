@@ -135,7 +135,7 @@ Still skim it before posting.
 Thames Water data is ~3 days old, so the integration imports **hourly long-term statistics at
 their real timestamps** instead of relying on sensor states. In Settings -> Dashboards -> Energy
 -> Water consumption -> Add, pick the statistic named
-**"Thames Water <meter> consumption"** (not the sensors). Re-imports are idempotent.
+**"Thames Water &lt;meter&gt; consumption"** (not the sensors). Re-imports are idempotent.
 
 **You cannot pick one of the usage sensors there.** Searching for `sensor.…` finds "No
 statistics found", because the sensors deliberately have no `state_class`: their data is days old,
@@ -145,8 +145,25 @@ no entity ID. Its ID is `thames_water_meter:<meter number>_water_consumption`, s
 `statistic_id` attribute of the **Meter reading** sensor, and it is listed under Developer tools
 -> Statistics once the first import has run.
 
-For the price, use the **Combined water rate** sensor (GBP/m³) as "Use an entity tracking the
-total costs", or a fixed price from your bill.
+### Costs
+Home Assistant cannot price an imported statistic itself: "Use an entity with current price" and
+"Use a static price" are greyed out for it. So the integration imports the cost as a second
+statistic, one value per hour. Under **Select how Home Assistant should keep track of the costs**
+choose **Use an entity tracking the total costs** and pick **Thames Water &lt;meter&gt; cost**
+(`thames_water_meter:<meter number>_water_cost`, also shown in the `statistic_id` attribute of
+**Month-to-date cost**).
+
+Each hour costs the water used at the **combined rate** (clean water plus wastewater, as on the
+bill) plus that hour's share of the **standing charge**. The daily charge is spread over the hours
+that day really has, so a day always adds up to exactly the daily charge, including the 23 and 25
+hour days when the clocks change. Over a billing period the total therefore tracks the bill: a
+29-day period at 11 m³ comes to £61.77 here against £61.76 billed, the difference being the bill
+rounding each line.
+
+Hours before the date the current rates took effect (1 April 2026 for this year's scheme) are not
+costed, because the earlier rates are not known, and nothing is imported while the tariff is
+unknown. The running total continues from what is already stored, so importing a window again
+does not restart it.
 
 ## Alerts
 Replace the old email alerts with an automation on the `Usage spike` binary sensor turning on,
