@@ -18,6 +18,9 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
   charging year (1 April to 31 March) has ended, and deleted when the integration is removed.
 
 ### Added
+- An integration icon (`brand/icon.png` and `icon@2x.png`), an original water drop drawn by
+  `scripts/make_brand_images.py`. Home Assistant 2026.3 and later show it in place of the
+  missing brand image.
 - Download diagnostics for bug reports, with credentials redacted and the account number and
   meter id masked.
 - Cubic metre (m³) twins of the five volume sensors (latest day, 7-day average, month-to-date,
