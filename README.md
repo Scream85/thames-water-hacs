@@ -21,6 +21,12 @@ For maintainers: set `version` in `manifest.json` to the same string as the tag 
 `v`), push the tag, and `.github/workflows/release.yml` publishes the release. It refuses a tag
 that does not match the manifest.
 
+## Unofficial
+This is an independent project. It is not affiliated with, endorsed by or supported by Thames
+Water. The Thames Water name and logo are trademarks of their owner. The logo is used here only to
+identify the service, in the same way the Home Assistant brands repository uses it, and it does
+not imply endorsement.
+
 ## Source repositories
 This project builds on these:
 * [`gavraq/thames-water-service`](https://github.com/gavraq/thames-water-service) - the original

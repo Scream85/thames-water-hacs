@@ -18,9 +18,11 @@ Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A l
   charging year (1 April to 31 March) has ended, and deleted when the integration is removed.
 
 ### Added
-- An integration icon (`brand/icon.png` and `icon@2x.png`), an original water drop drawn by
-  `scripts/make_brand_images.py`. Home Assistant 2026.3 and later show it in place of the
-  missing brand image.
+- An integration icon in `brand/` (`icon.png` and `icon@2x.png`), the same Thames Water image
+  the Home Assistant brands repository holds for the old `thames_water` domain, used for
+  identification only. The domain rename to `thames_water_meter` had lost it. Home Assistant
+  2026.3 and later show it from the integration folder. A README notice says the project is
+  unofficial.
 - Download diagnostics for bug reports, with credentials redacted and the account number and
   meter id masked.
 - Cubic metre (m³) twins of the five volume sensors (latest day, 7-day average, month-to-date,
