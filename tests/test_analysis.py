@@ -29,8 +29,15 @@ assert [sums[i+1]-sums[i] for i in range(4)] == usage[1:]
 # daily
 today = dt.date(2026, 10, 7)
 dl = [Line(f"{d}-October", 100 + d, 5000 + d, False, "X") for d in range(1, 5)]
-m = a.daily_metrics(lines_to_timeseries(dl), today)
+m = a.daily_metrics(lines_to_timeseries(dl))
 assert m.latest_usage == 104 and m.month_days == 4 and m.month_to_date == 410, m
 assert round(m.avg_7d, 1) == 102.5
+assert m.month == "2026-10"
+
+# data lag across a month boundary: the calendar month has no rows yet, so
+# month-to-date must follow the latest data point instead of reading 0
+dl2 = [Line(f"{d}-September", 100, 5000 + d, False, "X") for d in range(28, 31)]
+m2 = a.daily_metrics(lines_to_timeseries(dl2))
+assert m2.month == "2026-09" and m2.month_to_date == 300 and m2.month_days == 3, m2
 assert a.cost(1000, 0.0040223, 0.532) == round(4.0223 + 0.532, 2)
 print("all good")

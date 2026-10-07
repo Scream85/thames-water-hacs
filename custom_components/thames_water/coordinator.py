@@ -160,11 +160,10 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
         self._import_statistics(raw["meter"], statistic_id, hourly, start_of_hour)
 
         latest = hourly[-1] if hourly else None
-        today = dt_util.now().date()
         return ThamesWaterData(
             account_number=raw["account"],
             meter=raw["meter"],
-            daily=daily_metrics(raw["daily"], today),
+            daily=daily_metrics(raw["daily"]),
             latest_meter_read=cumulative_sum(latest, start_of_hour) if latest else None,
             latest_hour=latest.hour_start if latest else None,
             tariff=self._tariff,
