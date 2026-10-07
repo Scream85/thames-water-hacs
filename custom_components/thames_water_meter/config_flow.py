@@ -15,6 +15,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import callback
+from homeassistant.helpers.selector import DateSelector
 from thameswaterapi import (
     AuthenticationError,
     MalformedResponse,
@@ -23,6 +24,8 @@ from thameswaterapi import (
 )
 
 from .const import (
+    CONF_BILLING_PERIOD_END,
+    CONF_BILLING_PERIOD_START,
     CONF_SPIKE_THRESHOLD,
     DEFAULT_SPIKE_THRESHOLD,
     DOMAIN,
@@ -113,19 +116,32 @@ class ThamesWaterConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ThamesWaterOptionsFlow(OptionsFlowWithReload):
-    """Options: daily spike threshold."""
+    """Options: the daily spike threshold, and the dates of the current bill."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            start = user_input.get(CONF_BILLING_PERIOD_START)
+            end = user_input.get(CONF_BILLING_PERIOD_END)
+            # Dates arrive as ISO text, which sorts the same way as the dates do.
+            if start and end and end < start:
+                errors["base"] = "end_before_start"
+            else:
+                return self.async_create_entry(data=user_input)
         current = self.config_entry.options.get(CONF_SPIKE_THRESHOLD, DEFAULT_SPIKE_THRESHOLD)
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_SPIKE_THRESHOLD, default=current): vol.All(
+                    vol.Coerce(int), vol.Range(min=1)
+                ),
+                vol.Optional(CONF_BILLING_PERIOD_START): DateSelector(),
+                vol.Optional(CONF_BILLING_PERIOD_END): DateSelector(),
+            }
+        )
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_SPIKE_THRESHOLD, default=current): vol.All(
-                        vol.Coerce(int), vol.Range(min=1)
-                    )
-                }
+            data_schema=self.add_suggested_values_to_schema(
+                schema, user_input or dict(self.config_entry.options)
             ),
+            errors=errors,
         )

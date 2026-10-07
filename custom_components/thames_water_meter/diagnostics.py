@@ -130,6 +130,7 @@ async def async_get_config_entry_diagnostics(
         "read_is_start_of_hour": data.read_is_start_of_hour,
         "daily": _jsonable(data.daily),
         "hourly_minimum": _jsonable(data.hourly_minimum),
+        "billing_period": _jsonable(data.billing_period),
         # Published rates, the same for every customer in the region.
         "tariff": _jsonable(tariff) if tariff is not None else None,
     }

@@ -41,8 +41,10 @@ from thameswaterapi import (
 )
 
 from .analysis import (
+    BillingPeriod,
     DailyMetrics,
     HourlyMinimum,
+    billing_period,
     cumulative_sum,
     daily_metrics,
     hourly_costs,
@@ -52,7 +54,14 @@ from .analysis import (
     running_total,
     tariff_in_force,
 )
-from .const import DOMAIN, HOURLY_BACKFILL_DAYS, HOURLY_RECENT_DAYS, UPDATE_INTERVAL
+from .const import (
+    CONF_BILLING_PERIOD_END,
+    CONF_BILLING_PERIOD_START,
+    DOMAIN,
+    HOURLY_BACKFILL_DAYS,
+    HOURLY_RECENT_DAYS,
+    UPDATE_INTERVAL,
+)
 from .diagnostics import describe_response
 
 _LOGGER = logging.getLogger(__name__)
@@ -90,6 +99,7 @@ class ThamesWaterData:
     read_is_start_of_hour: bool = False
     hourly_minimum: HourlyMinimum | None = None
     cost_statistic_id: str = ""
+    billing_period: BillingPeriod | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -212,27 +222,78 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
 
         self._import_statistics(raw["meter"], statistic_id, hourly, start_of_hour)
         cost_statistic_id = f"{DOMAIN}:{_slug(raw['meter'])}_water_cost"
-        await self._async_import_cost_statistics(raw["meter"], cost_statistic_id, hourly)
+        latest_cost_total = await self._async_import_cost_statistics(
+            raw["meter"], cost_statistic_id, hourly
+        )
 
         latest = hourly[-1] if hourly else None
+        latest_read = cumulative_sum(latest, start_of_hour) if latest else None
+        billing = await self._async_billing_period(
+            statistic_id, cost_statistic_id, latest, latest_read, latest_cost_total
+        )
         return ThamesWaterData(
             account_number=raw["account"],
             meter=raw["meter"],
             daily=daily_metrics(raw["daily"]),
-            latest_meter_read=cumulative_sum(latest, start_of_hour) if latest else None,
+            latest_meter_read=latest_read,
             latest_hour=latest.hour_start if latest else None,
             tariff=self._tariff,
             statistic_id=statistic_id,
             read_is_start_of_hour=start_of_hour,
             hourly_minimum=minimum_hourly_usage(hourly),
             cost_statistic_id=cost_statistic_id,
+            billing_period=billing,
         )
+
+    async def _async_billing_period(
+        self,
+        consumption_id: str,
+        cost_id: str,
+        latest: HourlyMeasurement | None,
+        latest_read: float | None,
+        latest_cost_total: float | None,
+    ) -> BillingPeriod | None:
+        """Usage and cost over the bill's period, if the user has said when it starts.
+
+        Thames Water does not publish the dates of a bill, so the start (and optionally the
+        end) is set in Configure. Both figures are differences of running totals that are
+        already stored, so they agree with the Energy dashboard.
+        """
+        options = self.config_entry.options
+        start = _option_date(options.get(CONF_BILLING_PERIOD_START))
+        if start is None or latest is None:
+            return None
+        end = _option_date(options.get(CONF_BILLING_PERIOD_END))
+        if end is not None and end < start:
+            end = None
+        latest_day = latest.hour_start.date()
+        closed = end is not None and end < latest_day
+
+        start_at = dt.datetime.combine(start, dt.time.min, tzinfo=LONDON)
+        read_before = await self._async_stored_total(consumption_id, start_at)
+        cost_before = await self._async_stored_total(cost_id, start_at)
+        if closed and end is not None:
+            # Just before the midnight that follows the last day is the end of that day.
+            end_at = dt.datetime.combine(end + dt.timedelta(days=1), dt.time.min, tzinfo=LONDON)
+            read_end = await self._async_stored_total(consumption_id, end_at)
+            cost_end = await self._async_stored_total(cost_id, end_at)
+        else:
+            # The newest hours were only just written and may not be readable back yet.
+            read_end, cost_end = latest_read, latest_cost_total
+        return billing_period(start, end, latest_day, read_before, read_end, cost_before, cost_end)
 
     async def _async_sum_before(self, statistic_id: str, first_hour: dt.datetime) -> float:
         """The stored running total just before `first_hour`, or 0 if nothing precedes it.
 
         A running total has to continue from what is already stored, otherwise importing a
         window again would start it from zero and leave a jump where it joins the older hours.
+        """
+        total = await self._async_stored_total(statistic_id, first_hour)
+        return 0.0 if total is None else total
+
+    async def _async_stored_total(self, statistic_id: str, first_hour: dt.datetime) -> float | None:
+        """The stored running total just before `first_hour`, or None if nothing precedes it.
+
         Looking back a week covers a gap in the data.
         """
         end = dt_util.as_utc(first_hour)
@@ -250,21 +311,22 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             total = row.get("sum")
             if total is not None:
                 return float(total)
-        return 0.0
+        return None
 
     async def _async_import_cost_statistics(
         self, meter: str, statistic_id: str, hourly: list[HourlyMeasurement]
-    ) -> None:
+    ) -> float | None:
         """Import what each hour cost, so the Energy dashboard can show spend.
 
         The dashboard cannot price an imported statistic itself, so the cost is imported
         alongside it: water used at the combined rate plus the hour's share of the standing
         charge. Without a tariff nothing is imported, and hours before the rates took effect
-        are skipped.
+        are skipped. Returns the running total after the newest hour, or None if none was
+        imported.
         """
         tariff = self._tariff
         if tariff is None or not hourly:
-            return
+            return None
         costs = hourly_costs(
             hourly,
             tariff.unit_rate_per_litre,
@@ -272,7 +334,7 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             tariff.effective_date,
         )
         if not costs:
-            return
+            return None
         base = await self._async_sum_before(statistic_id, costs[0][0])
         totals = running_total(costs, base)
         stats = [
@@ -290,6 +352,7 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
             unit_class=None,
         )
         async_add_external_statistics(self.hass, metadata, stats)
+        return totals[-1]
 
     async def _async_save_tariff(self, tariff: Tariff) -> None:
         """Keep the tariff for the next start, writing only when it has changed."""
@@ -365,3 +428,13 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
 
 def _slug(value: str) -> str:
     return re.sub(r"[^a-z0-9_]", "_", value.lower())
+
+
+def _option_date(value: Any) -> dt.date | None:
+    """A date stored as text in the options, or None if unset or unreadable."""
+    if not value:
+        return None
+    try:
+        return dt.date.fromisoformat(str(value))
+    except ValueError:
+        return None

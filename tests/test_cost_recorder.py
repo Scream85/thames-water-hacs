@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Generator
-from types import SimpleNamespace
 
 import pytest
 from homeassistant.components.recorder import Recorder
@@ -69,11 +68,24 @@ def _store(hass: HomeAssistant, hours_before: dict[int, float]) -> None:
     async_add_external_statistics(hass, metadata, sorted(stats, key=lambda s: s["start"]))
 
 
+class _Coordinator:
+    """The two read methods and `hass`, which avoids building a whole coordinator."""
+
+    _async_stored_total = ThamesWaterCoordinator._async_stored_total
+    _async_sum_before = ThamesWaterCoordinator._async_sum_before
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+
+
 async def _sum_before(hass: HomeAssistant) -> float:
-    # The method only uses `self.hass`, so a stand-in avoids building a whole coordinator.
-    return await ThamesWaterCoordinator._async_sum_before(
-        SimpleNamespace(hass=hass), STATISTIC_ID, FIRST_HOUR
-    )
+    """The total the cost import continues from: 0 when nothing precedes the first hour."""
+    return await _Coordinator(hass)._async_sum_before(STATISTIC_ID, FIRST_HOUR)
+
+
+async def _stored_total(hass: HomeAssistant) -> float | None:
+    """The same read, but None when nothing precedes, which a billing period needs to know."""
+    return await _Coordinator(hass)._async_stored_total(STATISTIC_ID, FIRST_HOUR)
 
 
 async def test_the_total_just_before_the_first_hour_is_read_back(
@@ -108,6 +120,8 @@ async def test_nothing_stored_means_the_total_starts_at_zero(
     recorder_mock: Recorder, hass: HomeAssistant
 ) -> None:
     assert await _sum_before(hass) == 0.0
+    # A billing period must tell "nothing stored" from a stored zero, so the read says so.
+    assert await _stored_total(hass) is None
 
 
 async def test_a_total_more_than_a_week_earlier_is_not_used(
@@ -117,3 +131,13 @@ async def test_a_total_more_than_a_week_earlier_is_not_used(
     await async_wait_recording_done(hass)
 
     assert await _sum_before(hass) == 0.0
+    assert await _stored_total(hass) is None
+
+
+async def test_a_stored_zero_is_not_mistaken_for_nothing(
+    recorder_mock: Recorder, hass: HomeAssistant
+) -> None:
+    _store(hass, {1: 0.0})
+    await async_wait_recording_done(hass)
+
+    assert await _stored_total(hass) == 0.0

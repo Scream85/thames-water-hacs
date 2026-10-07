@@ -3,6 +3,25 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
+## 0.26.10.2b1 - 2026-10-07 (beta)
+
+Offered by HACS only with "Show beta versions" switched on for this repository. The stable
+`0.26.10.1` stays available.
+
+### Added
+- **Billing period usage**, its m³ twin and **Billing period cost**. Thames Water does not
+  publish the dates of a bill (the API has none), so you set them in Configure: *Billing period
+  starts*, and optionally *Billing period ends* to look at a finished period such as a bill you
+  already have. Both figures are the difference of the running totals the Energy dashboard
+  uses, so they agree with it, and the cost includes the standing charge. Attributes show the
+  period start and end, the days, whether it is closed, and whether the stored totals reach
+  back to its start.
+- The billing period is included in the diagnostics.
+
+### Fixed
+- The README said the combined rate sensor can be the Energy dashboard price. Home Assistant
+  does not allow a price for an imported statistic, so that line is removed.
+
 ## 0.26.10.1 - 2026-10-07
 
 The first stable release since the domain change. It includes everything from the betas

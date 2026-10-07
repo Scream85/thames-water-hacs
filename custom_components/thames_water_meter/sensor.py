@@ -38,6 +38,21 @@ def _month_cost(data: ThamesWaterData) -> float | None:
     )
 
 
+def _billing_attributes(data: ThamesWaterData) -> dict[str, Any]:
+    """The dates and coverage behind a billing period figure."""
+    period = data.billing_period
+    if period is None:
+        return {}
+    return {
+        "period_start": period.start.isoformat(),
+        "period_end": period.end.isoformat(),
+        "days": period.days,
+        "closed": period.closed,
+        # False means the stored totals do not reach back to the start of the period.
+        "complete": period.complete,
+    }
+
+
 def _tariff_attributes(data: ThamesWaterData) -> dict[str, Any]:
     """When the rates took effect, so a stale figure can be told from a current one."""
     if data.tariff is None:
@@ -137,6 +152,26 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
             "statistic_id": d.cost_statistic_id,
         },
     ),
+    # The period of the bill, which Thames Water does not publish, so it is set in Configure.
+    # Both figures are differences of the running totals that the Energy dashboard uses.
+    ThamesWaterSensorDescription(
+        key="billing_period_usage",
+        translation_key="billing_period_usage",
+        device_class=SensorDeviceClass.WATER,
+        native_unit_of_measurement=UnitOfVolume.LITERS,
+        suggested_display_precision=0,
+        value_fn=lambda d: d.billing_period.usage if d.billing_period else None,
+        attrs_fn=_billing_attributes,
+    ),
+    ThamesWaterSensorDescription(
+        key="billing_period_cost",
+        translation_key="billing_period_cost",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement="GBP",
+        suggested_display_precision=2,
+        value_fn=lambda d: d.billing_period.cost if d.billing_period else None,
+        attrs_fn=_billing_attributes,
+    ),
     # The published metered rates, in GBP per cubic metre as a bill states them. The combined
     # rate is what a litre costs, and can be used as the price in the Energy dashboard.
     # They have no device class, because MONETARY allows only a plain currency as its unit.
@@ -175,6 +210,7 @@ CUBIC_METRE_KEYS = (
     "month_to_date",
     "meter_reading",
     "min_hourly_usage",
+    "billing_period_usage",
 )
 
 

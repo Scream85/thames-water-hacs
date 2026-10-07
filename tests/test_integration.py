@@ -403,6 +403,15 @@ def _imported(add_stats, statistic_id: str):
 
 
 COST_ID = "thames_water_meter:m1_water_cost"
+READ_ID = "thames_water_meter:m1_water_consumption"
+
+
+def _row(day: int, hour: int, total: float, month: int = 10) -> dict:
+    """A stored statistic row: the hour starting at this UTC time, with its running total."""
+    start = dt.datetime(2026, month, day, hour, tzinfo=UTC)
+    return {"start": start.timestamp(), "sum": total}
+
+
 # The default fixture: hours of 10, 0 and 5 litres, 4.0 GBP/m3 (0.004 per litre), and a standing
 # charge of 0.5 a day, so each hour carries 0.5 / 24 of it.
 HOUR_COSTS = [10 * 0.004 + 0.5 / 24, 0 * 0.004 + 0.5 / 24, 5 * 0.004 + 0.5 / 24]
@@ -439,7 +448,7 @@ async def test_the_cost_total_continues_from_what_is_already_stored(
     hass: HomeAssistant, stored_statistics
 ) -> None:
     """Importing a window again must not restart the total from zero."""
-    stored_statistics.rows[COST_ID] = [{"start": 0.0, "sum": 40.0}, {"start": 3600.0, "sum": 50.0}]
+    stored_statistics.rows[COST_ID] = [_row(3, 22, 40.0), _row(3, 23, 50.0)]
     entry = _entry()
     entry.add_to_hass(hass)
     with patch.object(*FETCH, return_value=_raw()), patch(STATS) as add_stats:
@@ -485,6 +494,112 @@ async def test_hours_before_the_rates_took_effect_are_not_costed(hass: HomeAssis
 
     ids = [c.args[1]["statistic_id"] for c in add_stats.call_args_list]
     assert ids == ["thames_water_meter:m1_water_consumption"]
+
+
+async def _setup_with_options(hass: HomeAssistant, options: dict) -> MockConfigEntry:
+    entry = _entry(options=options)
+    await _setup(hass, entry, _raw())
+    return entry
+
+
+async def test_the_billing_period_sensors_are_empty_until_the_dates_are_set(
+    hass: HomeAssistant,
+) -> None:
+    await _setup(hass, _entry(), _raw())
+
+    for key in ("billing_period_usage", "billing_period_usage_m3", "billing_period_cost"):
+        assert _state(hass, "sensor", key).state == "unknown"
+
+
+async def test_a_running_billing_period_is_the_difference_of_the_stored_totals(
+    hass: HomeAssistant, stored_statistics
+) -> None:
+    """The meter read was 900 L and the cost total 2.00 just before the period started."""
+    # The period starts at midnight London time on 2 October, which is 23:00 UTC on the 1st.
+    stored_statistics.rows[READ_ID] = [_row(1, 22, 900.0, month=10)]
+    stored_statistics.rows[COST_ID] = [_row(1, 22, 2.0, month=10)]
+    await _setup_with_options(hass, {"billing_period_start": "2026-10-02"})
+
+    usage = _state(hass, "sensor", "billing_period_usage")
+    assert float(usage.state) == 115  # the latest read, 1015 L, minus the 900 L before
+    assert usage.attributes["period_start"] == "2026-10-02"
+    assert usage.attributes["period_end"] == "2026-10-04"  # the latest day with data
+    assert usage.attributes["days"] == 3
+    assert usage.attributes["closed"] is False
+    assert usage.attributes["complete"] is True
+    # The cost total grew from 2.00 by the three imported hours.
+    assert float(_state(hass, "sensor", "billing_period_cost").state) == pytest.approx(
+        round(sum(HOUR_COSTS), 2)
+    )
+    assert float(_state(hass, "sensor", "billing_period_usage_m3").state) == pytest.approx(0.115)
+
+
+async def test_a_finished_period_can_be_looked_at_to_check_a_bill(
+    hass: HomeAssistant, stored_statistics
+) -> None:
+    """With an end date before the latest data, both ends are read from what is stored."""
+    # 1 October starts at 23:00 UTC on 30 September, and 2 October ends at 23:00 UTC that day.
+    stored_statistics.rows[READ_ID] = [_row(30, 22, 800.0, month=9), _row(2, 22, 1000.0)]
+    stored_statistics.rows[COST_ID] = [_row(30, 22, 3.0, month=9), _row(2, 22, 5.0)]
+    await _setup_with_options(
+        hass, {"billing_period_start": "2026-10-01", "billing_period_end": "2026-10-02"}
+    )
+
+    usage = _state(hass, "sensor", "billing_period_usage")
+    assert float(usage.state) == 200
+    assert float(_state(hass, "sensor", "billing_period_cost").state) == pytest.approx(2.0)
+    assert usage.attributes["closed"] is True
+    assert usage.attributes["period_end"] == "2026-10-02"
+    assert usage.attributes["days"] == 2
+
+
+async def test_a_period_beginning_after_the_newest_data_has_no_figures_yet(
+    hass: HomeAssistant,
+) -> None:
+    """The data lags about three days, so a period that began yesterday has nothing yet."""
+    await _setup_with_options(hass, {"billing_period_start": "2026-10-06"})
+
+    usage = _state(hass, "sensor", "billing_period_usage")
+    assert usage.state == "unknown"
+    assert usage.attributes["days"] == 0
+    assert _state(hass, "sensor", "billing_period_cost").state == "unknown"
+
+
+async def test_a_period_older_than_the_stored_totals_is_marked_incomplete(
+    hass: HomeAssistant,
+) -> None:
+    """With nothing stored before the start, usage cannot be known and cost is only partial."""
+    await _setup_with_options(hass, {"billing_period_start": "2026-07-01"})
+
+    usage = _state(hass, "sensor", "billing_period_usage")
+    assert usage.state == "unknown"
+    assert usage.attributes["complete"] is False
+    # What was imported in this run is still counted, which is why the cost is not empty.
+    assert float(_state(hass, "sensor", "billing_period_cost").state) == pytest.approx(
+        round(sum(HOUR_COSTS), 2)
+    )
+
+
+async def test_an_end_date_before_the_start_is_ignored(
+    hass: HomeAssistant, stored_statistics
+) -> None:
+    stored_statistics.rows[READ_ID] = [_row(1, 22, 900.0)]
+    stored_statistics.rows[COST_ID] = [_row(1, 22, 2.0)]
+    await _setup_with_options(
+        hass, {"billing_period_start": "2026-10-02", "billing_period_end": "2026-09-01"}
+    )
+
+    assert _state(hass, "sensor", "billing_period_usage").attributes["closed"] is False
+
+
+async def test_the_diagnostics_show_the_billing_period(hass: HomeAssistant) -> None:
+    entry = await _setup_with_options(hass, {"billing_period_start": "2026-10-02"})
+
+    result = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert result["billing_period"]["start"] == "2026-10-02"
+    assert result["billing_period"]["days"] == 3
+    json.dumps(result)
 
 
 async def test_the_cost_statistic_id_is_shown_on_the_cost_sensor(hass: HomeAssistant) -> None:

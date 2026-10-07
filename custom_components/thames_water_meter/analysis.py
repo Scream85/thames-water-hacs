@@ -20,6 +20,51 @@ class DailyMetrics:
     month: str | None = None
 
 
+@dataclass
+class BillingPeriod:
+    """Usage and cost over the bill's period, from the totals the integration already imports."""
+
+    start: dt.date
+    end: dt.date  # the last day counted
+    days: int
+    usage: float | None  # litres
+    cost: float | None  # GBP
+    closed: bool  # a past period, ended by the configured end date
+    complete: bool  # the stored totals reach back to the start of the period
+
+
+def billing_period(
+    start: dt.date,
+    end: dt.date | None,
+    latest_day: dt.date,
+    read_before_start: float | None,
+    read_at_end: float | None,
+    cost_before_start: float | None,
+    cost_at_end: float | None,
+) -> BillingPeriod:
+    """Work out a billing period from running totals read before its start and at its end.
+
+    Usage is the meter read at the end minus the read just before the first day. Cost is the
+    running cost total in the same way, so both agree with the Energy dashboard. The data lags
+    about three days, so an open period counts up to the latest day with data, and a period that
+    has not reached any data yet has no figures. With an end date earlier than the latest data,
+    the period is closed, which also makes it possible to check a past bill.
+    """
+    closed = end is not None and end < latest_day
+    last_day = end if closed and end is not None else latest_day
+    days = max((last_day - start).days + 1, 0)
+    if days == 0:
+        return BillingPeriod(start, last_day, 0, None, None, closed, False)
+    usage = None
+    if read_before_start is not None and read_at_end is not None:
+        usage = max(read_at_end - read_before_start, 0.0)
+    cost = None
+    if cost_at_end is not None:
+        cost = round(max(cost_at_end - (cost_before_start or 0.0), 0.0), 2)
+    complete = read_before_start is not None and (cost_before_start is not None or cost is None)
+    return BillingPeriod(start, last_day, days, usage, cost, closed, complete)
+
+
 def daily_metrics(daily: list[Any]) -> DailyMetrics:
     """Compute headline figures from Measurement-like objects (start, usage).
 

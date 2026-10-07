@@ -53,7 +53,17 @@ def stored_statistics() -> Generator[StoredStatistics]:
 
     def during_period(hass, start, end, statistic_ids, period, units, types):
         stored.reads.append((start, end, set(statistic_ids)))
-        return {sid: stored.rows[sid] for sid in statistic_ids if sid in stored.rows}
+        found = {}
+        for sid in statistic_ids:
+            # Like the recorder: rows whose hour starts in [start, end), oldest first.
+            rows = [
+                row
+                for row in stored.rows.get(sid, [])
+                if start.timestamp() <= row["start"] < end.timestamp()
+            ]
+            if rows:
+                found[sid] = sorted(rows, key=lambda row: row["start"])
+        return found
 
     class Instance:
         async def async_add_executor_job(self, function, *args):

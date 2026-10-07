@@ -32,10 +32,20 @@
     "step": {
       "init": {
         "title": "Thames Water options",
+        "description": "The billing period sensors need the dates of your current bill, which Thames Water does not publish. Enter the first day after the period on your last bill ended. Leave both dates empty to switch the billing period sensors off.",
         "data": {
-          "spike_threshold": "Daily spike threshold (litres)"
+          "spike_threshold": "Daily spike threshold (litres)",
+          "billing_period_start": "Billing period starts",
+          "billing_period_end": "Billing period ends"
+        },
+        "data_description": {
+          "billing_period_start": "The first day of the current bill, for example the day after the period on your last bill ended.",
+          "billing_period_end": "Optional. Fill it in to look at a finished period, such as the one on a bill you already have, and leave it empty for the period still running."
         }
       }
+    },
+    "error": {
+      "end_before_start": "The billing period cannot end before it starts."
     }
   },
   "entity": {
@@ -78,6 +88,15 @@
       },
       "month_to_date_cost": {
         "name": "Month-to-date cost"
+      },
+      "billing_period_usage": {
+        "name": "Billing period usage"
+      },
+      "billing_period_usage_m3": {
+        "name": "Billing period usage (m³)"
+      },
+      "billing_period_cost": {
+        "name": "Billing period cost"
       },
       "clean_water_rate": {
         "name": "Clean water rate"

@@ -13,7 +13,12 @@ from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from thameswaterapi import AuthenticationError
 
-from custom_components.thames_water_meter.const import CONF_SPIKE_THRESHOLD, DOMAIN
+from custom_components.thames_water_meter.const import (
+    CONF_BILLING_PERIOD_END,
+    CONF_BILLING_PERIOD_START,
+    CONF_SPIKE_THRESHOLD,
+    DOMAIN,
+)
 
 ACCOUNT = 12345678
 CREDENTIALS = {"email": "someone@example.com", "password": "hunter2"}
@@ -166,3 +171,78 @@ async def test_options_flow_sets_the_spike_threshold(hass: HomeAssistant) -> Non
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_SPIKE_THRESHOLD] == 1500
+
+
+async def _options_flow(hass: HomeAssistant, entry: MockConfigEntry):
+    return await hass.config_entries.options.async_init(entry.entry_id)
+
+
+async def test_options_flow_sets_the_billing_period(hass: HomeAssistant) -> None:
+    entry = _entry()
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+
+    result = await _options_flow(hass, entry)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_SPIKE_THRESHOLD: 800,
+            CONF_BILLING_PERIOD_START: "2026-09-29",
+            CONF_BILLING_PERIOD_END: "2026-10-28",
+        },
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options[CONF_BILLING_PERIOD_START] == "2026-09-29"
+    assert entry.options[CONF_BILLING_PERIOD_END] == "2026-10-28"
+
+
+async def test_options_flow_leaves_the_period_off_when_the_dates_are_empty(
+    hass: HomeAssistant,
+) -> None:
+    entry = _entry(options={CONF_BILLING_PERIOD_START: "2026-09-29"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+
+    result = await _options_flow(hass, entry)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_SPIKE_THRESHOLD: 800}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert CONF_BILLING_PERIOD_START not in entry.options  # clearing the field switches it off
+
+
+async def test_options_flow_rejects_an_end_before_the_start(hass: HomeAssistant) -> None:
+    entry = _entry()
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+
+    result = await _options_flow(hass, entry)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_SPIKE_THRESHOLD: 800,
+            CONF_BILLING_PERIOD_START: "2026-10-28",
+            CONF_BILLING_PERIOD_END: "2026-09-29",
+        },
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "end_before_start"}
+    assert CONF_BILLING_PERIOD_START not in entry.options
+
+
+async def test_options_flow_offers_the_saved_dates_again(hass: HomeAssistant) -> None:
+    entry = _entry(options={CONF_BILLING_PERIOD_START: "2026-09-29"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+
+    result = await _options_flow(hass, entry)
+
+    suggested = {
+        str(key): key.description["suggested_value"]
+        for key in result["data_schema"].schema
+        if key.description and "suggested_value" in key.description
+    }
+    assert suggested[CONF_BILLING_PERIOD_START] == "2026-09-29"

@@ -14,3 +14,7 @@ UPDATE_INTERVAL = timedelta(hours=6)  # Thames Water data lags ~3 days anyway
 # separately, once per start-up.
 HOURLY_RECENT_DAYS = 30
 HOURLY_BACKFILL_DAYS = 90
+
+# The bill's period cannot be read from Thames Water, so the user sets it in Configure.
+CONF_BILLING_PERIOD_START = "billing_period_start"
+CONF_BILLING_PERIOD_END = "billing_period_end"

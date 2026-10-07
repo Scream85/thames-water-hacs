@@ -119,10 +119,33 @@ The domain changed in 0.26.10.0, so Home Assistant sees a different integration:
 | Meter reading | litres; attribute `statistic_id` |
 | Minimum hourly usage | litres in the quietest hour of the latest complete day, with `date` and `hour`. Stays well above zero overnight if there is a leak |
 | Last data | diagnostic timestamp of the newest hour Thames Water has reported |
-| Clean water rate / Wastewater rate / Combined water rate | GBP per m³ as on a bill, from Thames Water's published scheme of charges, with `effective_date`. The combined rate (clean water plus wastewater) is what a litre costs and can be the price in the Energy dashboard |
-| Usage and meter reading in m³ | the five volume sensors above again in cubic metres (three decimals), for comparing with meters that report m³ |
+| Clean water rate / Wastewater rate / Combined water rate | GBP per m³ as on a bill, from Thames Water's published scheme of charges, with `effective_date`. The combined rate (clean water plus wastewater) is what a litre costs |
+| Usage and meter reading in m³ | the volume sensors above again in cubic metres (three decimals), for comparing with meters that report m³ |
 | Latest day cost / Month-to-date cost | GBP, uses Thames Water's published tariff + daily standing charge |
+| Billing period usage / cost | usage and cost over the period of your bill, once you have set its dates in Configure (see below) |
 | Usage spike | problem binary sensor, on when latest day > threshold (Configure -> default 800 L) |
+
+## Billing period
+Thames Water does not publish the dates of a bill, so the period is something you tell the
+integration: Settings -> Devices & services -> Thames Water Smart Meter -> **Configure**.
+
+* **Billing period starts**: the first day of your current bill, which is the day after the period
+  on your last bill ended. With monthly billing, set it again after each bill.
+* **Billing period ends**: optional. Leave it empty for the period still running, and the sensors
+  count up to the latest day Thames Water has reported. Fill it in to look at a finished period.
+* Leave both empty to switch the billing period sensors off.
+
+**Billing period usage** (litres, with an m³ twin) and **Billing period cost** are the difference
+between the running totals at the start and at the end of the period, which are the same totals
+the Energy dashboard uses, so the figures agree with it. The cost includes the standing charge.
+The sensors' attributes show `period_start`, `period_end`, `days`, `closed` and `complete`.
+`complete: false` means the stored totals do not reach back to the start of the period (about 90
+days are kept), so the usage is unknown and the cost is only partial.
+
+Because the data is about three days old, a period that began a day or two ago has no figures
+yet. To check a past bill, set both dates to that bill's period: for example a period of
+31 August to 28 September should read about the litres on the bill, and the cost should be
+within a penny or two of the amount charged, since the bill rounds each line.
 
 ## Reporting a problem
 Settings -> Devices & services -> Thames Water Smart Meter -> three dots -> **Download

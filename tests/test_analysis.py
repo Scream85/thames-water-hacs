@@ -119,6 +119,30 @@ assert a.hourly_costs([], 0.004, 0.48, effective) == []
 totals = a.running_total(costs, 100.0)
 assert totals[0] == round(100.0 + costs[0][1], 6) and abs(totals[-1] - 101.44) < 1e-6, totals
 assert a.running_total([], 5.0) == []
+# billing period: difference of running totals between its start and its end
+D = dt.date
+p = a.billing_period(D(2026, 10, 2), None, D(2026, 10, 4), 900.0, 1015.0, 2.0, 2.5)
+assert (p.days, p.usage, p.cost, p.closed, p.complete) == (3, 115.0, 0.5, False, True), p
+assert (p.start, p.end) == (D(2026, 10, 2), D(2026, 10, 4))
+# an end date before the latest data closes the period at that day
+p = a.billing_period(D(2026, 8, 31), D(2026, 9, 28), D(2026, 10, 4), 100.0, 11100.0, 0.0, 61.766)
+assert (p.days, p.usage, p.cost, p.closed) == (29, 11000.0, 61.77, True), p
+assert p.end == D(2026, 9, 28)
+# an end date on or after the latest data does not close it: the period is still running
+p = a.billing_period(D(2026, 10, 2), D(2026, 10, 10), D(2026, 10, 4), 900.0, 1015.0, 2.0, 2.5)
+assert (p.closed, p.end, p.days) == (False, D(2026, 10, 4), 3), p
+# a period that starts after the newest data (it lags about 3 days) has no figures yet
+p = a.billing_period(D(2026, 10, 6), None, D(2026, 10, 4), 900.0, 1015.0, 2.0, 2.5)
+assert (p.days, p.usage, p.cost, p.complete) == (0, None, None, False), p
+# stored totals that do not reach back to the start give a partial cost and no usage
+p = a.billing_period(D(2026, 7, 1), None, D(2026, 10, 4), None, 1015.0, None, 40.0)
+assert (p.usage, p.cost, p.complete) == (None, 40.0, False), p
+# no tariff means no cost, but the usage is still there
+p = a.billing_period(D(2026, 10, 2), None, D(2026, 10, 4), 900.0, 1015.0, None, None)
+assert (p.usage, p.cost, p.complete) == (115.0, None, True), p
+# a period of one day
+p = a.billing_period(D(2026, 10, 4), None, D(2026, 10, 4), 1000.0, 1345.0, 10.0, 11.99)
+assert (p.days, p.usage, p.cost) == (1, 345.0, 1.99), p
 # merging windows: one row per hour, oldest first, a later window wins on overlap
 older = [N(hour_start=dt.datetime(2026, 9, 1, 0, tzinfo=dt.UTC), usage=1)]
 older.append(N(hour_start=dt.datetime(2026, 9, 1, 1, tzinfo=dt.UTC), usage=2))
