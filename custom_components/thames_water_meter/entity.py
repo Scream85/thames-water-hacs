@@ -21,6 +21,7 @@ class ThamesWaterEntity(CoordinatorEntity[ThamesWaterCoordinator]):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{data.account_number}_{data.meter}")},
             name=f"Thames Water meter {data.meter}",
-            manufacturer="Thames Water",
-            model="Smart water meter",
+            # No manufacturer: "by Thames Water" would say the company makes this integration,
+            # and the meter's real maker is not something the account data tells us.
+            model="Thames Water smart meter",
         )

@@ -12,6 +12,7 @@ import requests
 from homeassistant.components.recorder.models import StatisticMeanType
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -111,6 +112,36 @@ def _full_day_hourly() -> list[SimpleNamespace]:
                 )
             )
     return rows
+
+
+async def test_tariff_rate_sensors_show_the_rates_per_cubic_metre(hass: HomeAssistant) -> None:
+    await _setup(hass, _entry(), _raw())
+
+    clean = _state(hass, "sensor", "clean_water_rate")
+    assert float(clean.state) == pytest.approx(1.5)
+    assert clean.attributes["unit_of_measurement"] == "GBP/m³"
+    assert clean.attributes["effective_date"] == TARIFF.effective_date.isoformat()
+    assert float(_state(hass, "sensor", "wastewater_rate").state) == pytest.approx(2.5)
+    # The combined rate is the sum, the same figure the cost sensors price a litre with.
+    assert float(_state(hass, "sensor", "combined_water_rate").state) == pytest.approx(4.0)
+
+
+async def test_tariff_rate_sensors_have_no_value_without_a_tariff(hass: HomeAssistant) -> None:
+    await _setup(hass, _entry(), _raw(tariff=False))
+
+    for key in ("clean_water_rate", "wastewater_rate", "combined_water_rate"):
+        assert _state(hass, "sensor", key).state == "unknown"
+
+
+async def test_the_device_is_not_attributed_to_thames_water(hass: HomeAssistant) -> None:
+    """The device page reads "<model> by <manufacturer>", which would say the company made
+    this integration, and the account data does not say who made the meter."""
+    await _setup(hass, _entry(), _raw())
+
+    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, f"{ACCOUNT}_{METER}")})
+    assert device is not None
+    assert device.manufacturer is None
+    assert device.model == "Thames Water smart meter"
 
 
 async def test_minimum_hourly_usage_and_last_data_sensors(hass: HomeAssistant) -> None:

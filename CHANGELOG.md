@@ -3,6 +3,19 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
+## Unreleased
+
+### Added
+- Three tariff rate sensors in GBP per m³, as a bill states them: Clean water rate,
+  Wastewater rate and Combined water rate, each with the date the rates took effect. The
+  combined rate is the one the cost sensors price a litre with. Checked against a real bill.
+
+### Changed
+- The device no longer says it is made by Thames Water. The manufacturer is left empty and the
+  model reads "Thames Water smart meter", because the company does not make this integration
+  and the account data does not name the meter's maker. Existing devices pick this up on the
+  next start.
+
 ## 0.26.10.1b1 - 2026-10-07 (beta)
 
 Offered by HACS only with "Show beta versions" switched on for this repository.

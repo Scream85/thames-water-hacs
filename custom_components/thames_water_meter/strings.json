@@ -45,7 +45,10 @@
       "min_hourly_usage_m3": { "name": "Minimum hourly usage (m³)" },
       "last_data": { "name": "Last data" },
       "latest_day_cost": { "name": "Latest day cost" },
-      "month_to_date_cost": { "name": "Month-to-date cost" }
+      "month_to_date_cost": { "name": "Month-to-date cost" },
+      "clean_water_rate": { "name": "Clean water rate" },
+      "wastewater_rate": { "name": "Wastewater rate" },
+      "combined_water_rate": { "name": "Combined water rate" }
     },
     "binary_sensor": {
       "usage_spike": { "name": "Usage spike" }

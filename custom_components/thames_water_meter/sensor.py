@@ -38,6 +38,13 @@ def _month_cost(data: ThamesWaterData) -> float | None:
     )
 
 
+def _tariff_attributes(data: ThamesWaterData) -> dict[str, Any]:
+    """When the rates took effect, so a stale figure can be told from a current one."""
+    if data.tariff is None:
+        return {}
+    return {"effective_date": data.tariff.effective_date.isoformat()}
+
+
 @dataclass(frozen=True, kw_only=True)
 class ThamesWaterSensorDescription(SensorEntityDescription):
     value_fn: Callable[[ThamesWaterData], Any]
@@ -125,6 +132,33 @@ SENSORS: tuple[ThamesWaterSensorDescription, ...] = (
         suggested_display_precision=2,
         value_fn=_month_cost,
         attrs_fn=lambda d: {"month": d.daily.month, "days": d.daily.month_days},
+    ),
+    # The published metered rates, in GBP per cubic metre as a bill states them. The combined
+    # rate is what a litre costs, and can be used as the price in the Energy dashboard.
+    # They have no device class, because MONETARY allows only a plain currency as its unit.
+    ThamesWaterSensorDescription(
+        key="clean_water_rate",
+        translation_key="clean_water_rate",
+        native_unit_of_measurement="GBP/m³",
+        suggested_display_precision=4,
+        value_fn=lambda d: d.tariff.clean_water_rate_per_m3 if d.tariff else None,
+        attrs_fn=lambda d: _tariff_attributes(d),
+    ),
+    ThamesWaterSensorDescription(
+        key="wastewater_rate",
+        translation_key="wastewater_rate",
+        native_unit_of_measurement="GBP/m³",
+        suggested_display_precision=4,
+        value_fn=lambda d: d.tariff.wastewater_rate_per_m3 if d.tariff else None,
+        attrs_fn=lambda d: _tariff_attributes(d),
+    ),
+    ThamesWaterSensorDescription(
+        key="combined_water_rate",
+        translation_key="combined_water_rate",
+        native_unit_of_measurement="GBP/m³",
+        suggested_display_precision=4,
+        value_fn=lambda d: d.tariff.volumetric_rate_per_m3 if d.tariff else None,
+        attrs_fn=lambda d: _tariff_attributes(d),
     ),
 )
 

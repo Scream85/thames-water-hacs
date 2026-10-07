@@ -78,6 +78,15 @@
       },
       "month_to_date_cost": {
         "name": "Month-to-date cost"
+      },
+      "clean_water_rate": {
+        "name": "Clean water rate"
+      },
+      "wastewater_rate": {
+        "name": "Wastewater rate"
+      },
+      "combined_water_rate": {
+        "name": "Combined water rate"
       }
     },
     "binary_sensor": {
