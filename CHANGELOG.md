@@ -3,6 +3,15 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
+## 0.26.11.2 - 2026-11-25
+
+Documentation only; the integration behaves as in `0.26.11.1`.
+
+### Changed
+- The README describes installing and trying betas through the Home Assistant Marketplace
+  (Add from link, Include pre-releases, Install another version) instead of HACS.
+- A code comment about the login now reflects thameswaterapi 0.7.1.
+
 ## 0.26.11.1 - 2026-11-25
 
 Stable release. It includes everything from the betas `0.26.10.2b1` to `0.26.10.2b3`, which are
