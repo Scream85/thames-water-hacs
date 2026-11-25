@@ -84,15 +84,15 @@ on this repository.
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ## Install
-### HACS (recommended)
-1. HACS -> three dots -> **Custom repositories** -> add
-   `https://github.com/Scream85/thames-water-hacs`, category **Integration**.
-2. Download **Thames Water Smart Meter**, restart Home Assistant.
+### Marketplace (recommended)
+1. Settings -> **Marketplace** -> **Browse** -> **Add from link**, paste
+   `https://github.com/Scream85/thames-water-hacs` and choose **Add**.
+2. Install **Thames Water Smart Meter**, restart Home Assistant.
 3. Settings -> Devices & services -> Add integration -> Thames Water Smart Meter.
 
 ### Manual
 1. Copy `custom_components/thames_water_meter/` into your HA `config/custom_components/`
-   (or add this folder as a HACS custom repository).
+   (or add the repository to the Marketplace with **Add from link**).
 2. Restart Home Assistant (requires 2025.8+).
 3. Settings -> Devices & services -> Add integration -> **Thames Water Smart Meter**.
 4. Enter your Thames Water email and password.
