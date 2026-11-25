@@ -3,25 +3,10 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
-## 0.26.10.2b3 - 2026-11-25 (beta)
+## 0.26.11.1 - 2026-11-25
 
-Offered by HACS only with "Show beta versions" switched on for this repository.
-
-### Fixed
-- Setup failed with "unexpected response body: Line.__init__() got an unexpected keyword
-  argument 'continuousFlow'" (and the log showed "Thames Water returned an unexpected page").
-  Since 24 November Thames Water sends a new `continuousFlow` field on each meter line, which
-  thameswaterapi 0.6.0 rejects. The integration now requires thameswaterapi 0.7.1, which
-  ignores unknown fields, so Home Assistant upgrades the library itself.
-
-### Changed
-- `0.26.10.2b2` worked around this inside the integration. That workaround is removed now that
-  the library handles it.
-
-## 0.26.10.2b1 - 2026-10-07 (beta)
-
-Offered by HACS only with "Show beta versions" switched on for this repository. The stable
-`0.26.10.1` stays available.
+Stable release. It includes everything from the betas `0.26.10.2b1` to `0.26.10.2b3`, which are
+listed here.
 
 ### Added
 - **Billing period usage**, its m³ twin and **Billing period cost**. Thames Water does not
@@ -34,6 +19,12 @@ Offered by HACS only with "Show beta versions" switched on for this repository. 
 - The billing period is included in the diagnostics.
 
 ### Fixed
+- Setup failed with "unexpected response body: Line.__init__() got an unexpected keyword
+  argument 'continuousFlow'" (and the log showed "Thames Water returned an unexpected page").
+  Since 24 November Thames Water sends a new `continuousFlow` field on each meter line, which
+  thameswaterapi 0.6.0 rejects. The integration now requires thameswaterapi 0.7.1, which
+  ignores unknown fields, so Home Assistant upgrades the library itself. (`0.26.10.2b2` worked
+  around this inside the integration; that workaround is gone now the library handles it.)
 - The README said the combined rate sensor can be the Energy dashboard price. Home Assistant
   does not allow a price for an imported statistic, so that line is removed.
 
