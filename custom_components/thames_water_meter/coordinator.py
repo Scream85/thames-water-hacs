@@ -40,6 +40,7 @@ from thameswaterapi import (
     meter_usage_lines_to_timeseries,
 )
 
+from . import compat
 from .analysis import (
     BillingPeriod,
     DailyMetrics,
@@ -65,6 +66,8 @@ from .const import (
 from .diagnostics import describe_response
 
 _LOGGER = logging.getLogger(__name__)
+
+compat.install()
 
 TARIFF_STORAGE_VERSION = 1
 

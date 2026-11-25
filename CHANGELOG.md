@@ -3,6 +3,17 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
+## 0.26.10.2b2 - 2026-11-25 (beta)
+
+Offered by HACS only with "Show beta versions" switched on for this repository.
+
+### Fixed
+- Setup failed with "unexpected response body: Line.__init__() got an unexpected keyword
+  argument 'continuousFlow'" (and the log showed "Thames Water returned an unexpected page").
+  Since 24 November Thames Water sends a new `continuousFlow` field on each meter line, which
+  thameswaterapi 0.6.0 rejects. Unknown line fields are now dropped before the library parses
+  them; remove the workaround once thameswaterapi handles them itself.
+
 ## 0.26.10.2b1 - 2026-10-07 (beta)
 
 Offered by HACS only with "Show beta versions" switched on for this repository. The stable
