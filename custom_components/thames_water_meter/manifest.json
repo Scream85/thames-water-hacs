@@ -13,7 +13,7 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Scream85/thames-water-hacs/issues",
   "requirements": [
-    "thameswaterapi>=0.6.0"
+    "thameswaterapi>=0.7.1"
   ],
-  "version": "0.26.10.2b2"
+  "version": "0.26.10.2b3"
 }

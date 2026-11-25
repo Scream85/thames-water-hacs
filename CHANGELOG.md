@@ -3,7 +3,7 @@
 Versions follow `v0.<yy>.<m>.<revision>`, with the revision counting from 0. A letter suffix
 (`b1`, `rc1`) marks a beta, published as a GitHub pre-release.
 
-## 0.26.10.2b2 - 2026-11-25 (beta)
+## 0.26.10.2b3 - 2026-11-25 (beta)
 
 Offered by HACS only with "Show beta versions" switched on for this repository.
 
@@ -11,8 +11,12 @@ Offered by HACS only with "Show beta versions" switched on for this repository.
 - Setup failed with "unexpected response body: Line.__init__() got an unexpected keyword
   argument 'continuousFlow'" (and the log showed "Thames Water returned an unexpected page").
   Since 24 November Thames Water sends a new `continuousFlow` field on each meter line, which
-  thameswaterapi 0.6.0 rejects. Unknown line fields are now dropped before the library parses
-  them; remove the workaround once thameswaterapi handles them itself.
+  thameswaterapi 0.6.0 rejects. The integration now requires thameswaterapi 0.7.1, which
+  ignores unknown fields, so Home Assistant upgrades the library itself.
+
+### Changed
+- `0.26.10.2b2` worked around this inside the integration. That workaround is removed now that
+  the library handles it.
 
 ## 0.26.10.2b1 - 2026-10-07 (beta)
 

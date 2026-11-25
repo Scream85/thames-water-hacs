@@ -3,4 +3,4 @@
 pytest-homeassistant-custom-component==0.13.316
 # The integration's own requirement (manifest.json). Home Assistant installs it
 # at runtime, so nothing installs it for a test run.
-thameswaterapi>=0.6.0
+thameswaterapi>=0.7.1
