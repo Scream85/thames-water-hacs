@@ -140,10 +140,11 @@ class ThamesWaterCoordinator(DataUpdateCoordinator[ThamesWaterData]):
 
     # ---- blocking part, runs in the executor -------------------------------
     def _fetch(self) -> dict[str, Any]:
-        # Fresh client + full password login every cycle. Do NOT reuse a stored
-        # refresh token: that path yields an id_token without the B2C session
-        # cookies, and establishing the myaccount session then fails with
-        # "no id_token in the login page body".
+        # Fresh client + full login every cycle, with no refresh token kept between
+        # cycles. A refresh token can give an id_token without the B2C session cookies,
+        # so the myaccount session fails with "no id_token in the login page body".
+        # thameswaterapi 0.7.1 falls through to the password step when that happens,
+        # so reusing the token would now be safe, but nothing stores it yet.
         client = _DiagClient(
             email=self.config_entry.data[CONF_EMAIL],
             password=self.config_entry.data[CONF_PASSWORD],
