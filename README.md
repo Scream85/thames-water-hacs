@@ -12,9 +12,10 @@ Releases are tagged `v0.<yy>.<m>.<revision>`, with the revision counting from 0.
 `v0.26.10.0` is the first release of October 2026 and `v0.26.10.1` the second.
 
 ### Beta versions
-Betas are GitHub pre-releases tagged with a PEP 440 suffix, for example `v0.26.10.1b1`. HACS
-hides them by default. To try one: HACS -> **Thames Water Smart Meter** -> three dots ->
-**Redownload** -> switch on **Show beta versions** -> pick the beta. Switching it off returns you
+Betas are GitHub pre-releases tagged with a PEP 440 suffix, for example `v0.26.10.2b3`. The
+Home Assistant Marketplace hides them by default. To try one: Marketplace -> **Thames Water Smart
+Meter** -> three dots -> **Include pre-releases**, then three dots -> **Install another version**
+-> pick the beta (pre-releases are labelled). Switching **Include pre-releases** off returns you
 to the latest stable release on the next update.
 
 For maintainers: set `version` in `manifest.json` to the same string as the tag (without the
